@@ -6,6 +6,7 @@ import com.platform.common.security.PlatformHmac;
 import com.platform.workflow.registry.config.PlatformProperties;
 import com.platform.workflow.registry.domain.ExecutionRole;
 import java.time.Instant;
+import java.nio.charset.StandardCharsets;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
@@ -59,6 +60,13 @@ public class CursorBridgeClient {
                     .header(PlatformHmac.SIGNATURE_HEADER, signature)
                     .body(json)
                     .retrieve()
+                    .onStatus(
+                            status -> status.is4xxClientError() || status.is5xxServerError(),
+                            (req, res) -> {
+                                String errBody = new String(res.getBody().readAllBytes(), StandardCharsets.UTF_8);
+                                throw new CursorBridgeClientException(
+                                        "cursor-bridge HTTP " + res.getStatusCode().value() + ": " + errBody);
+                            })
                     .body(ObjectNode.class);
 
             if (response == null) {

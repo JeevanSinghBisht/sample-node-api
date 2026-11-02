@@ -7,8 +7,8 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.platform.cursor.bridge.config.BridgeProperties;
 import com.platform.cursor.bridge.domain.AgentRole;
 import com.platform.cursor.bridge.service.SpawnAgentCommand;
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.util.Base64;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpHeaders;
@@ -47,6 +47,13 @@ public class CursorAgentsClient {
                 .uri("/v1/agents")
                 .body(body.toString())
                 .retrieve()
+                .onStatus(
+                        status -> status.is4xxClientError() || status.is5xxServerError(),
+                        (req, res) -> {
+                            String errBody = readBody(res);
+                            throw new CursorApiException(
+                                    "Cursor API HTTP " + res.getStatusCode().value() + ": " + errBody);
+                        })
                 .body(JsonNode.class);
 
         if (response == null || !response.has("agent")) {
@@ -128,10 +135,20 @@ public class CursorAgentsClient {
             apiKey = apiKey.trim();
         }
         if (apiKey == null || apiKey.isBlank()) {
-            return "Basic " + Base64.getEncoder().encodeToString(":".getBytes(StandardCharsets.UTF_8));
+            if (properties.getCursor().isMockEnabled()) {
+                return "Bearer mock-local";
+            }
+            throw new CursorApiException("CURSOR_API_KEY is not set on cursor-bridge");
         }
-        String token = apiKey + ":";
-        return "Basic " + Base64.getEncoder().encodeToString(token.getBytes(StandardCharsets.UTF_8));
+        return "Bearer " + apiKey;
+    }
+
+    private static String readBody(org.springframework.http.client.ClientHttpResponse response) throws IOException {
+        byte[] bytes = response.getBody().readAllBytes();
+        if (bytes.length == 0) {
+            return "(empty body)";
+        }
+        return new String(bytes, StandardCharsets.UTF_8);
     }
 
     private static String truncateName(String value) {
