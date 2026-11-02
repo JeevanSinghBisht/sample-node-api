@@ -78,4 +78,6 @@ public final class TaskDtos {
             TaskSummaryResponse task,
             List<TransitionHistoryItem> transitions,
             List<ExecutionResponse> executions) {}
+
+    public record HumanApproveRequest(@NotBlank String idempotencyKey, String mergedBy) {}
 }

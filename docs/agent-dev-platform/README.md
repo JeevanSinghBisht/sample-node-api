@@ -29,10 +29,12 @@ This folder defines the architecture for a software development platform where *
 
 Spring Boot multi-module skeleton lives in [`platform/`](../../platform/README.md) (`workflow-registry` service).
 
-## Implementation order (suggested)
+## Implementation status
 
-1. MySQL schema + **workflow-registry** Spring Boot service (internal APIs for n8n) — **scaffolded**.
-2. GitHub App webhooks → RabbitMQ → n8n trigger workflow.
-3. **cursor-bridge** service: launch agents, receive completion webhooks, map to events — **scaffolded** in `platform/cursor-bridge`.
-4. n8n main workflow + rejection/retry sub-workflows.
-5. React ops dashboard (read-only first, then human approval actions).
+| Step | Location |
+|------|----------|
+| workflow-registry + outbox | `platform/workflow-registry` |
+| GitHub webhooks (`agent:ready`, PR opened) | `POST /webhooks/v1/github` |
+| cursor-bridge | `platform/cursor-bridge` |
+| n8n import workflows | `platform/n8n/*.json` |
+| React ops dashboard | `platform/ops-dashboard` |

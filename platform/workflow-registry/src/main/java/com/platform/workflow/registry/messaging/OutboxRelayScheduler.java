@@ -19,16 +19,19 @@ public class OutboxRelayScheduler {
 
     private final OutboxEventRepository outboxEventRepository;
     private final RabbitTemplate rabbitTemplate;
+    private final N8nWebhookNotifier n8nWebhookNotifier;
     private final String exchangeName;
     private final int batchSize;
 
     public OutboxRelayScheduler(
             OutboxEventRepository outboxEventRepository,
             RabbitTemplate rabbitTemplate,
+            N8nWebhookNotifier n8nWebhookNotifier,
             @Value("${platform.messaging.exchange:platform.events}") String exchangeName,
             @Value("${platform.outbox.batch-size:50}") int batchSize) {
         this.outboxEventRepository = outboxEventRepository;
         this.rabbitTemplate = rabbitTemplate;
+        this.n8nWebhookNotifier = n8nWebhookNotifier;
         this.exchangeName = exchangeName;
         this.batchSize = batchSize;
     }
@@ -44,6 +47,9 @@ public class OutboxRelayScheduler {
                     message.getMessageProperties().setContentType("application/json");
                     return message;
                 });
+                if (event.getEventType().equals("platform.task.state.changed")) {
+                    n8nWebhookNotifier.notifyTaskStateChanged(event.getPayloadJson());
+                }
                 event.setPublishedAt(Instant.now());
             } catch (Exception ex) {
                 log.warn("Failed to publish outbox event id={}: {}", event.getId(), ex.getMessage());

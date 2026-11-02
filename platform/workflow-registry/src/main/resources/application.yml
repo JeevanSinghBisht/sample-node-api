@@ -39,6 +39,13 @@ platform:
     hmac-enabled: true
     hmac-secret: ${PLATFORM_INTERNAL_HMAC_SECRET:change-me-in-production}
     max-timestamp-skew-seconds: 300
+  github:
+    webhook-secret: ${GITHUB_WEBHOOK_SECRET:}
+    ready-label: agent:ready
+  n8n:
+    task-state-webhook-url: ${N8N_TASK_STATE_WEBHOOK_URL:}
+  dashboard:
+    allowed-origins: ${DASHBOARD_ALLOWED_ORIGINS:http://localhost:5173}
 
 management:
   endpoints:
