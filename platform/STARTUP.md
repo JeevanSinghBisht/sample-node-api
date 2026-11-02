@@ -444,6 +444,7 @@ Full template: [`.env.example`](.env.example).
 |---------|----------------|
 | `platform-common:jar:0.1.0-SNAPSHOT is missing` | Run from `platform/`: `mvn install -DskipTests` **or** use `-am`: `mvn -pl workflow-registry -am spring-boot:run` |
 | Hibernate schema-validation (`tinyint`, `char` vs `varchar`, `enum`, …) | Pull latest and restart registry — Flyway applies **V2** and **V3**. No need to drop the database. |
+| Flyway **V3** failed (`fk_task_repo` incompatible / failed migration) | Pull latest (fixed V3), then clear the failed row if present: `mysql workflow_registry -e "DELETE FROM flyway_schema_history WHERE version='3' AND success=0;"` and restart **workflow-registry**. |
 | `failed to bind host port … 5672` (or 3306 / 6379) | MySQL/Redis/RabbitMQ already on host → use **Option A**: `docker compose up -d` (n8n only), not `docker-compose.infra.yml`. Run `docker compose down` first. |
 | Registry won’t start | MySQL reachable? Database `workflow_registry` exists? `.env` credentials match your local MySQL |
 | n8n workflow doesn’t run | Workflows **activated**? `N8N_TASK_STATE_WEBHOOK_URL` set and registry restarted |
