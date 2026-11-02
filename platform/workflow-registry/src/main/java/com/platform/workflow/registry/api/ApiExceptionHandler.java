@@ -1,6 +1,7 @@
 package com.platform.workflow.registry.api;
 
 import com.platform.workflow.registry.integration.CursorBridgeClientException;
+import org.springframework.dao.PessimisticLockingFailureException;
 import com.platform.workflow.registry.service.DuplicateIdempotencyException;
 import com.platform.workflow.registry.service.InvalidTransitionException;
 import com.platform.workflow.registry.service.ResourceNotFoundException;
@@ -32,6 +33,14 @@ public class ApiExceptionHandler {
     @ExceptionHandler(CursorBridgeClientException.class)
     public ResponseEntity<Map<String, String>> bridgeFailure(CursorBridgeClientException ex) {
         return ResponseEntity.status(HttpStatus.BAD_GATEWAY).body(Map.of("error", ex.getMessage()));
+    }
+
+    @ExceptionHandler(PessimisticLockingFailureException.class)
+    public ResponseEntity<Map<String, String>> lockTimeout(PessimisticLockingFailureException ex) {
+        return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
+                .body(Map.of(
+                        "error",
+                        "Database lock timeout (outbox relay may be stuck). Restart workflow-registry or clear stale MySQL transactions, then retry."));
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
