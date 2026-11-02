@@ -11,6 +11,7 @@ import com.platform.workflow.registry.repository.TaskTransitionRepository;
 import com.platform.workflow.registry.repository.WorkflowTaskRepository;
 import java.util.List;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -40,7 +41,9 @@ public class TaskQueryService {
     }
 
     public Page<TaskDtos.TaskSummaryResponse> listTaskSummaries(TaskState state, Pageable pageable) {
-        return listTasks(state, pageable).map(TaskMapper::toSummary);
+        Page<WorkflowTask> page = listTasks(state, pageable);
+        var summaries = page.getContent().stream().map(TaskMapper::toSummary).toList();
+        return new PageImpl<>(summaries, pageable, page.getTotalElements());
     }
 
     public WorkflowTask getTask(String taskId) {

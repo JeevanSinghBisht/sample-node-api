@@ -19,7 +19,7 @@ public class WorkflowTask {
     @Column(length = 36)
     private String id;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @ManyToOne(fetch = FetchType.EAGER, optional = false)
     @JoinColumn(name = "repo_config_id", nullable = false)
     private RepoConfig repoConfig;
 

@@ -7,16 +7,22 @@ import java.util.List;
 import java.util.Optional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 public interface WorkflowTaskRepository extends JpaRepository<WorkflowTask, String> {
 
+    @Override
+    @EntityGraph(attributePaths = "repoConfig")
+    Page<WorkflowTask> findAll(Pageable pageable);
+
     @Query("SELECT t FROM WorkflowTask t JOIN t.repoConfig r WHERE r.fullName = :fullName AND t.issueNumber = :issueNumber")
     Optional<WorkflowTask> findByRepoFullNameAndIssueNumber(
             @Param("fullName") String fullName, @Param("issueNumber") int issueNumber);
 
+    @EntityGraph(attributePaths = "repoConfig")
     Page<WorkflowTask> findByState(TaskState state, Pageable pageable);
 
     @Query("""
