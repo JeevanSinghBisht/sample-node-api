@@ -1,0 +1,40 @@
+
+# Local MySQL, Redis, and RabbitMQ already installed on the host (ports 3306, 6379, 5672).
+# Spring Boot apps and Flyway use localhost via platform/.env — not this file.
+#
+#   cd platform && docker compose up -d
+#
+# Optional Docker MySQL/Redis/RabbitMQ (only if those ports are free on the host):
+#   docker compose -f docker-compose.yml -f docker-compose.infra.yml up -d
+# platform/docker-compose.yml
+# Local MySQL, Redis, RabbitMQ on host — Spring uses platform/.env (localhost).
+
+services:
+  n8n:
+    image: n8nio/n8n:1.67.1
+    ports:
+      - "${N8N_PUBLISH_PORT:-5678}:5678"
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      N8N_HOST: localhost
+      N8N_PORT: 5678
+      N8N_PROTOCOL: http
+      WEBHOOK_URL: http://localhost:5678/
+      GENERIC_TIMEZONE: UTC
+      N8N_SECURE_COOKIE: "false"
+      N8N_BLOCK_ENV_ACCESS_IN_NODE: "false"
+      REGISTRY_BASE_URL: ${N8N_REGISTRY_BASE_URL:-http://host.docker.internal:8081}
+      BRIDGE_BASE_URL: ${N8N_BRIDGE_BASE_URL:-http://host.docker.internal:8082}
+      PLATFORM_HMAC_SECRET: ${PLATFORM_INTERNAL_HMAC_SECRET:-local-dev-secret}
+      AGENT_REPO_URL: ${AGENT_REPO_URL:-${GITLAB_REPO_URL:-https://gitlab.com/example/group/project}}
+      GITLAB_REPO_URL: ${GITLAB_REPO_URL:-${AGENT_REPO_URL:-https://gitlab.com/example/group/project}}
+      REPO_DEFAULT_REF: ${REPO_DEFAULT_REF:-main}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - n8n_data:/home/node/.n8n
+
+volumes:
+  n8n_data:

@@ -1,0 +1,161 @@
+diff --git a/platform/workflow-registry/src/main/java/com/platform/workflow/registry/api/TaskController.java b/platform/workflow-registry/src/main/java/com/platform/workflow/registry/api/TaskController.java
+index 6f99014..527ebdb 100644
+--- a/platform/workflow-registry/src/main/java/com/platform/workflow/registry/api/TaskController.java
++++ b/platform/workflow-registry/src/main/java/com/platform/workflow/registry/api/TaskController.java
+@@ -3,7 +3,6 @@ package com.platform.workflow.registry.api;
+ import com.platform.workflow.registry.api.dto.TaskDtos;
+ import com.platform.workflow.registry.domain.ActorType;
+ import com.platform.workflow.registry.domain.TaskState;
+-import com.platform.workflow.registry.domain.WorkflowTask;
+ import com.platform.workflow.registry.service.TaskQueryService;
+ import com.platform.workflow.registry.service.TaskTransitionService;
+ import jakarta.validation.Valid;
+@@ -34,20 +33,18 @@ public class TaskController {
+     public Page<TaskDtos.TaskSummaryResponse> listTasks(
+             @RequestParam(required = false) TaskState state,
+             @PageableDefault(size = 20) Pageable pageable) {
+-        return queryService.listTasks(state, pageable).map(TaskMapper::toSummary);
++        return queryService.listTaskSummaries(state, pageable);
+     }
+ 
+     @GetMapping("/{taskId}")
+     public TaskDtos.TaskDetailResponse getTask(@PathVariable String taskId) {
+-        WorkflowTask task = queryService.getTask(taskId);
+-        return TaskMapper.toDetail(
+-                task, queryService.getTransitions(taskId), queryService.getExecutions(taskId));
++        return queryService.getTaskDetail(taskId);
+     }
+ 
+     @PostMapping("/{taskId}/human-approve")
+     public TaskDtos.TaskSummaryResponse humanApprove(
+             @PathVariable String taskId, @Valid @RequestBody TaskDtos.HumanApproveRequest request) {
+-        WorkflowTask task = transitionService.transition(
++        transitionService.transition(
+                 taskId,
+                 TaskState.DONE,
+                 "human_merge_acknowledged",
+@@ -55,6 +52,6 @@ public class TaskController {
+                 ActorType.HUMAN,
+                 request.mergedBy() != null ? request.mergedBy() : "operator",
+                 null);
+-        return TaskMapper.toSummary(task);
++        return queryService.getTaskSummary(taskId);
+     }
+ }
+diff --git a/platform/workflow-registry/src/main/java/com/platform/workflow/registry/api/internal/InternalTaskController.java b/platform/workflow-registry/src/main/java/com/platform/workflow/registry/api/internal/InternalTaskController.java
+index 91cee01..541844a 100644
+--- a/platform/workflow-registry/src/main/java/com/platform/workflow/registry/api/internal/InternalTaskController.java
++++ b/platform/workflow-registry/src/main/java/com/platform/workflow/registry/api/internal/InternalTaskController.java
+@@ -1,6 +1,5 @@
+ package com.platform.workflow.registry.api.internal;
+ 
+-import com.platform.workflow.registry.api.TaskMapper;
+ import com.platform.workflow.registry.api.dto.TaskDtos;
+ import com.platform.workflow.registry.domain.ActorType;
+ import com.platform.workflow.registry.domain.WorkflowTask;
+@@ -36,9 +35,7 @@ public class InternalTaskController {
+ 
+     @GetMapping("/{taskId}")
+     public TaskDtos.TaskDetailResponse getTask(@PathVariable String taskId) {
+-        WorkflowTask task = queryService.getTask(taskId);
+-        return TaskMapper.toDetail(
+-                task, queryService.getTransitions(taskId), queryService.getExecutions(taskId));
++        return queryService.getTaskDetail(taskId);
+     }
+ 
+     @PostMapping("/from-issue")
+@@ -54,7 +51,7 @@ public class InternalTaskController {
+                 request.idempotencyKey(),
+                 request.actorType() != null ? request.actorType() : ActorType.N8N,
+                 request.actorId()));
+-        return TaskMapper.toSummary(task);
++        return queryService.getTaskSummary(task.getId());
+     }
+ 
+     @PostMapping("/{taskId}/transition")
+diff --git a/platform/workflow-registry/src/main/java/com/platform/workflow/registry/domain/WorkflowTask.java b/platform/workflow-registry/src/main/java/com/platform/workflow/registry/domain/WorkflowTask.java
+index fa33a07..439edf8 100644
+--- a/platform/workflow-registry/src/main/java/com/platform/workflow/registry/domain/WorkflowTask.java
++++ b/platform/workflow-registry/src/main/java/com/platform/workflow/registry/domain/WorkflowTask.java
+@@ -19,7 +19,7 @@ public class WorkflowTask {
+     @Column(length = 36)
+     private String id;
+ 
+-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
++    @ManyToOne(fetch = FetchType.EAGER, optional = false)
+     @JoinColumn(name = "repo_config_id", nullable = false)
+     private RepoConfig repoConfig;
+ 
+diff --git a/platform/workflow-registry/src/main/java/com/platform/workflow/registry/repository/WorkflowTaskRepository.java b/platform/workflow-registry/src/main/java/com/platform/workflow/registry/repository/WorkflowTaskRepository.java
+index 576e029..e37108b 100644
+--- a/platform/workflow-registry/src/main/java/com/platform/workflow/registry/repository/WorkflowTaskRepository.java
++++ b/platform/workflow-registry/src/main/java/com/platform/workflow/registry/repository/WorkflowTaskRepository.java
+@@ -7,16 +7,22 @@ import java.util.List;
+ import java.util.Optional;
+ import org.springframework.data.domain.Page;
+ import org.springframework.data.domain.Pageable;
++import org.springframework.data.jpa.repository.EntityGraph;
+ import org.springframework.data.jpa.repository.JpaRepository;
+ import org.springframework.data.jpa.repository.Query;
+ import org.springframework.data.repository.query.Param;
+ 
+ public interface WorkflowTaskRepository extends JpaRepository<WorkflowTask, String> {
+ 
++    @Override
++    @EntityGraph(attributePaths = "repoConfig")
++    Page<WorkflowTask> findAll(Pageable pageable);
++
+     @Query("SELECT t FROM WorkflowTask t JOIN t.repoConfig r WHERE r.fullName = :fullName AND t.issueNumber = :issueNumber")
+     Optional<WorkflowTask> findByRepoFullNameAndIssueNumber(
+             @Param("fullName") String fullName, @Param("issueNumber") int issueNumber);
+ 
++    @EntityGraph(attributePaths = "repoConfig")
+     Page<WorkflowTask> findByState(TaskState state, Pageable pageable);
+ 
+     @Query("""
+diff --git a/platform/workflow-registry/src/main/java/com/platform/workflow/registry/service/TaskQueryService.java b/platform/workflow-registry/src/main/java/com/platform/workflow/registry/service/TaskQueryService.java
+index 51d2e3e..17aaea9 100644
+--- a/platform/workflow-registry/src/main/java/com/platform/workflow/registry/service/TaskQueryService.java
++++ b/platform/workflow-registry/src/main/java/com/platform/workflow/registry/service/TaskQueryService.java
+@@ -1,5 +1,7 @@
+ package com.platform.workflow.registry.service;
+ 
++import com.platform.workflow.registry.api.TaskMapper;
++import com.platform.workflow.registry.api.dto.TaskDtos;
+ import com.platform.workflow.registry.domain.TaskExecution;
+ import com.platform.workflow.registry.domain.TaskState;
+ import com.platform.workflow.registry.domain.TaskTransition;
+@@ -9,6 +11,7 @@ import com.platform.workflow.registry.repository.TaskTransitionRepository;
+ import com.platform.workflow.registry.repository.WorkflowTaskRepository;
+ import java.util.List;
+ import org.springframework.data.domain.Page;
++import org.springframework.data.domain.PageImpl;
+ import org.springframework.data.domain.Pageable;
+ import org.springframework.stereotype.Service;
+ import org.springframework.transaction.annotation.Transactional;
+@@ -37,10 +40,25 @@ public class TaskQueryService {
+         return taskRepository.findByState(state, pageable);
+     }
+ 
++    public Page<TaskDtos.TaskSummaryResponse> listTaskSummaries(TaskState state, Pageable pageable) {
++        Page<WorkflowTask> page = listTasks(state, pageable);
++        var summaries = page.getContent().stream().map(TaskMapper::toSummary).toList();
++        return new PageImpl<>(summaries, pageable, page.getTotalElements());
++    }
++
+     public WorkflowTask getTask(String taskId) {
+         return taskRepository.findById(taskId).orElseThrow(() -> new ResourceNotFoundException("Task not found"));
+     }
+ 
++    public TaskDtos.TaskDetailResponse getTaskDetail(String taskId) {
++        WorkflowTask task = getTask(taskId);
++        return TaskMapper.toDetail(task, getTransitions(taskId), getExecutions(taskId));
++    }
++
++    public TaskDtos.TaskSummaryResponse getTaskSummary(String taskId) {
++        return TaskMapper.toSummary(getTask(taskId));
++    }
++
+     public List<TaskTransition> getTransitions(String taskId) {
+         getTask(taskId);
+         return transitionRepository.findByTaskIdOrderByCreatedAtAsc(taskId);

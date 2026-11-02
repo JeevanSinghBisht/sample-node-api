@@ -1,9 +1,15 @@
 coverage/
 node_modules/
+.env
+platform/.env
+platform/ops-dashboard/dist/
 .vscode/
 output
 dist
 .history/
+
+# Java / Maven
+**/target/
 
 # mac
 .DS_Store

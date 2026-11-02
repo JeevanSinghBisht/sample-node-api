@@ -1,0 +1,9 @@
+{
+  "name": "product-starter",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Starter repo for agent-dev-platform GitLab workflow",
+  "scripts": {
+    "start": "node src/server.js"
+  }
+}

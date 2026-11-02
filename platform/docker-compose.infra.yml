@@ -1,0 +1,35 @@
+# Optional — only use if you do NOT have MySQL, Redis, RabbitMQ on the host.
+#
+#   docker compose -f docker-compose.yml -f docker-compose.infra.yml up -d
+#
+# Stop if you get "address already in use" on 3306 / 6379 / 5672 — use docker-compose.yml alone.
+
+services:
+  mysql:
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: workflow_registry
+      MYSQL_USER: platform
+      MYSQL_PASSWORD: platform
+    ports:
+      - "${MYSQL_PUBLISH_PORT:-3306}:3306"
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "${REDIS_PUBLISH_PORT:-6379}:6379"
+
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    environment:
+      RABBITMQ_DEFAULT_USER: platform
+      RABBITMQ_DEFAULT_PASS: platform
+    ports:
+      - "${RABBITMQ_PUBLISH_PORT:-5672}:5672"
+      - "${RABBITMQ_MGMT_PUBLISH_PORT:-15672}:15672"

@@ -1,0 +1,160 @@
+{
+  "name": "platform-agent-completion",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "platform-agent-completion",
+        "responseMode": "onReceived",
+        "options": {}
+      },
+      "id": "b1b2c3d4-1111-4000-8000-000000000001",
+      "name": "Agent completion webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 300],
+      "webhookId": "platform-agent-completion"
+    },
+    {
+      "parameters": {
+        "jsCode": "const item = $json.body ?? $json;\nreturn [{ json: {\n  taskId: item.taskId,\n  executionId: item.executionId,\n  role: item.role,\n  outcome: (item.outcome || '').toLowerCase(),\n  prUrl: item.prUrl,\n  headSha: item.headSha,\n  summary: item.summary\n}}];"
+      },
+      "id": "b1b2c3d4-1111-4000-8000-000000000002",
+      "name": "Normalize completion",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.role }}",
+                    "rightValue": "DEVELOPER",
+                    "operator": { "type": "string", "operation": "equals" }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "DEVELOPER"
+            },
+            {
+              "conditions": {
+                "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.role }}",
+                    "rightValue": "REVIEWER",
+                    "operator": { "type": "string", "operation": "equals" }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "REVIEWER"
+            },
+            {
+              "conditions": {
+                "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.role }}",
+                    "rightValue": "TESTER",
+                    "operator": { "type": "string", "operation": "equals" }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "TESTER"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "b1b2c3d4-1111-4000-8000-000000000003",
+      "name": "Switch on role",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const crypto = require('crypto');\nconst c = $json;\nlet target = 'IN_REVIEW';\nlet reason = 'developer_completed';\nif (c.outcome !== 'success') {\n  target = 'DEV_FAILED';\n  reason = 'developer_failed';\n}\nconst metadata = {};\nif (c.prUrl) metadata.prUrl = c.prUrl;\nif (c.headSha) metadata.headSha = c.headSha;\nconst body = JSON.stringify({ targetState: target, reason, idempotencyKey: `completion-${c.executionId}`, metadata });\nconst ts = Math.floor(Date.now()/1000).toString();\nconst sig = 'hmac-sha256=' + crypto.createHmac('sha256', $env.PLATFORM_HMAC_SECRET).update(ts + '.' + body).digest('hex');\nreturn [{ json: { taskId: c.taskId, body, ts, sig } }];"
+      },
+      "id": "b1b2c3d4-1111-4000-8000-000000000010",
+      "name": "HMAC transition DEV outcome",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [920, 140]
+    },
+    {
+      "parameters": {
+        "jsCode": "const crypto = require('crypto');\nconst c = $json;\nlet target = 'IN_QA';\nlet reason = 'reviewer_approved';\nif (c.outcome === 'rejected') {\n  target = 'REVIEW_REJECTED';\n  reason = 'reviewer_rejected';\n}\nconst body = JSON.stringify({ targetState: target, reason, idempotencyKey: `completion-${c.executionId}`, metadata: { feedback: c.summary } });\nconst ts = Math.floor(Date.now()/1000).toString();\nconst sig = 'hmac-sha256=' + crypto.createHmac('sha256', $env.PLATFORM_HMAC_SECRET).update(ts + '.' + body).digest('hex');\nreturn [{ json: { taskId: c.taskId, body, ts, sig } }];"
+      },
+      "id": "b1b2c3d4-1111-4000-8000-000000000020",
+      "name": "HMAC transition REV outcome",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [920, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const crypto = require('crypto');\nconst c = $json;\nlet target = 'AWAITING_HUMAN';\nlet reason = 'qa_passed';\nif (c.outcome !== 'success') {\n  target = 'QA_FAILED';\n  reason = 'qa_failed';\n}\nconst body = JSON.stringify({ targetState: target, reason, idempotencyKey: `completion-${c.executionId}`, metadata: { feedback: c.summary } });\nconst ts = Math.floor(Date.now()/1000).toString();\nconst sig = 'hmac-sha256=' + crypto.createHmac('sha256', $env.PLATFORM_HMAC_SECRET).update(ts + '.' + body).digest('hex');\nreturn [{ json: { taskId: c.taskId, body, ts, sig } }];"
+      },
+      "id": "b1b2c3d4-1111-4000-8000-000000000030",
+      "name": "HMAC transition QA outcome",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [920, 460]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.REGISTRY_BASE_URL }}/internal/v1/tasks/{{ $json.taskId }}/transition",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Content-Type", "value": "application/json" },
+            { "name": "X-Platform-Timestamp", "value": "={{ $json.ts }}" },
+            { "name": "X-Platform-Signature", "value": "={{ $json.sig }}" }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{ $json.body }}",
+        "options": {}
+      },
+      "id": "b1b2c3d4-1111-4000-8000-000000000040",
+      "name": "Registry transition",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1140, 300]
+    }
+  ],
+  "connections": {
+    "Agent completion webhook": { "main": [[{ "node": "Normalize completion", "type": "main", "index": 0 }]] },
+    "Normalize completion": { "main": [[{ "node": "Switch on role", "type": "main", "index": 0 }]] },
+    "Switch on role": {
+      "main": [
+        [{ "node": "HMAC transition DEV outcome", "type": "main", "index": 0 }],
+        [{ "node": "HMAC transition REV outcome", "type": "main", "index": 0 }],
+        [{ "node": "HMAC transition QA outcome", "type": "main", "index": 0 }]
+      ]
+    },
+    "HMAC transition DEV outcome": { "main": [[{ "node": "Registry transition", "type": "main", "index": 0 }]] },
+    "HMAC transition REV outcome": { "main": [[{ "node": "Registry transition", "type": "main", "index": 0 }]] },
+    "HMAC transition QA outcome": { "main": [[{ "node": "Registry transition", "type": "main", "index": 0 }]] }
+  },
+  "active": false,
+  "settings": { "executionOrder": "v1" },
+  "meta": { "templateCredsSetupCompleted": true },
+  "tags": []
+}

@@ -1,0 +1,316 @@
+{
+  "name": "platform-task-lifecycle",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "platform-task-state",
+        "responseMode": "onReceived",
+        "options": {}
+      },
+      "id": "a1b2c3d4-1111-4000-8000-000000000001",
+      "name": "Task state webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 300],
+      "webhookId": "platform-task-state"
+    },
+    {
+      "parameters": {
+        "jsCode": "const envelope = $json.body ?? $json;\nconst payload = envelope.payload ?? envelope;\nreturn [{ json: {\n  taskId: payload.taskId,\n  state: payload.state,\n  repoFullName: payload.repoFullName,\n  issueNumber: payload.issueNumber,\n  issueUrl: payload.issueUrl,\n  issueTitle: payload.issueTitle,\n  issueBody: payload.issueBody,\n  prUrl: payload.prUrl,\n  headSha: payload.headSha,\n  attemptDev: payload.attemptDev ?? 0,\n  attemptReview: payload.attemptReview ?? 0,\n  attemptQa: payload.attemptQa ?? 0\n}}];"
+      },
+      "id": "a1b2c3d4-1111-4000-8000-000000000002",
+      "name": "Normalize envelope",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.state }}",
+                    "rightValue": "READY",
+                    "operator": { "type": "string", "operation": "equals" }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "READY"
+            },
+            {
+              "conditions": {
+                "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.state }}",
+                    "rightValue": "IN_REVIEW",
+                    "operator": { "type": "string", "operation": "equals" }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "IN_REVIEW"
+            },
+            {
+              "conditions": {
+                "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.state }}",
+                    "rightValue": "IN_QA",
+                    "operator": { "type": "string", "operation": "equals" }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "IN_QA"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "a1b2c3d4-1111-4000-8000-000000000003",
+      "name": "Switch on state",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const crypto = require('crypto');\nconst taskId = $('Normalize envelope').item.json.taskId;\nconst secret = $env.PLATFORM_HMAC_SECRET;\nconst body = JSON.stringify({ role: 'DEVELOPER', n8nExecutionId: $execution.id });\nconst ts = Math.floor(Date.now()/1000).toString();\nconst sigPayload = ts + '.' + body;\nconst sig = 'hmac-sha256=' + crypto.createHmac('sha256', secret).update(sigPayload).digest('hex');\nreturn [{ json: { taskId, body, ts, sig } }];"
+      },
+      "id": "a1b2c3d4-1111-4000-8000-000000000010",
+      "name": "HMAC create execution DEV",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [920, 140]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.REGISTRY_BASE_URL }}/internal/v1/tasks/{{ $json.taskId }}/executions",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Content-Type", "value": "application/json" },
+            { "name": "X-Platform-Timestamp", "value": "={{ $json.ts }}" },
+            { "name": "X-Platform-Signature", "value": "={{ $json.sig }}" }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{ $json.body }}",
+        "options": {}
+      },
+      "id": "a1b2c3d4-1111-4000-8000-000000000011",
+      "name": "Registry create DEV execution",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1140, 140]
+    },
+    {
+      "parameters": {
+        "jsCode": "const crypto = require('crypto');\nconst norm = $('Normalize envelope').item.json;\nconst executionId = $json.id;\nconst agentRepo = ($env.AGENT_REPO_URL || $env.GITLAB_REPO_URL || $env.GITHUB_REPO_URL || '').replace(/\\/$/, '');\nconst baseRef = ($env.REPO_DEFAULT_REF || 'main').trim();\nconst issueUrl = norm.issueUrl || (agentRepo ? `${agentRepo}/-/issues/${norm.issueNumber}` : '');\nconst body = JSON.stringify({\n  taskId: norm.taskId,\n  executionId,\n  role: 'DEVELOPER',\n  repoUrl: agentRepo,\n  baseRef,\n  branchName: `cursor/task-${norm.taskId}-dev-${norm.attemptDev}-ec4b`,\n  promptContext: {\n    taskId: norm.taskId,\n    executionId,\n    issueNumber: String(norm.issueNumber),\n    issueUrl,\n    issueTitle: norm.issueTitle || 'Automated task',\n    issueBody: norm.issueBody || 'See linked issue for full description.',\n    reviewFeedback: 'none',\n    qaFeedback: 'none'\n  }\n});\nconst ts = Math.floor(Date.now()/1000).toString();\nconst sig = 'hmac-sha256=' + crypto.createHmac('sha256', $env.PLATFORM_HMAC_SECRET).update(ts + '.' + body).digest('hex');\nreturn [{ json: { body, ts, sig } }];"
+      },
+      "id": "a1b2c3d4-1111-4000-8000-000000000012",
+      "name": "HMAC spawn DEV agent",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1360, 140]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.BRIDGE_BASE_URL }}/internal/v1/agents",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Content-Type", "value": "application/json" },
+            { "name": "X-Platform-Timestamp", "value": "={{ $json.ts }}" },
+            { "name": "X-Platform-Signature", "value": "={{ $json.sig }}" }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{ $json.body }}",
+        "options": {}
+      },
+      "id": "a1b2c3d4-1111-4000-8000-000000000013",
+      "name": "Bridge spawn DEV",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1580, 140]
+    },
+    {
+      "parameters": {
+        "jsCode": "const crypto = require('crypto');\nconst taskId = $('Normalize envelope').item.json.taskId;\nconst body = JSON.stringify({ role: 'REVIEWER', n8nExecutionId: $execution.id });\nconst ts = Math.floor(Date.now()/1000).toString();\nconst sig = 'hmac-sha256=' + crypto.createHmac('sha256', $env.PLATFORM_HMAC_SECRET).update(ts + '.' + body).digest('hex');\nreturn [{ json: { taskId, body, ts, sig } }];"
+      },
+      "id": "a1b2c3d4-1111-4000-8000-000000000020",
+      "name": "HMAC create REV execution",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [920, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.REGISTRY_BASE_URL }}/internal/v1/tasks/{{ $json.taskId }}/executions",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Content-Type", "value": "application/json" },
+            { "name": "X-Platform-Timestamp", "value": "={{ $json.ts }}" },
+            { "name": "X-Platform-Signature", "value": "={{ $json.sig }}" }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{ $json.body }}",
+        "options": {}
+      },
+      "id": "a1b2c3d4-1111-4000-8000-000000000021",
+      "name": "Registry create REV execution",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1140, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const crypto = require('crypto');\nconst norm = $('Normalize envelope').item.json;\nconst executionId = $json.id;\nconst body = JSON.stringify({\n  taskId: norm.taskId,\n  executionId,\n  role: 'REVIEWER',\n  repoUrl: ($env.AGENT_REPO_URL || $env.GITLAB_REPO_URL || $env.GITHUB_REPO_URL || ''),\n  prUrl: norm.prUrl,\n  promptContext: { taskId: norm.taskId, executionId, prUrl: norm.prUrl || '' }\n});\nconst ts = Math.floor(Date.now()/1000).toString();\nconst sig = 'hmac-sha256=' + crypto.createHmac('sha256', $env.PLATFORM_HMAC_SECRET).update(ts + '.' + body).digest('hex');\nreturn [{ json: { body, ts, sig } }];"
+      },
+      "id": "a1b2c3d4-1111-4000-8000-000000000022",
+      "name": "HMAC spawn REV agent",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1360, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.BRIDGE_BASE_URL }}/internal/v1/agents",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Content-Type", "value": "application/json" },
+            { "name": "X-Platform-Timestamp", "value": "={{ $json.ts }}" },
+            { "name": "X-Platform-Signature", "value": "={{ $json.sig }}" }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{ $json.body }}",
+        "options": {}
+      },
+      "id": "a1b2c3d4-1111-4000-8000-000000000023",
+      "name": "Bridge spawn REV",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1580, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const crypto = require('crypto');\nconst taskId = $('Normalize envelope').item.json.taskId;\nconst body = JSON.stringify({ role: 'TESTER', n8nExecutionId: $execution.id });\nconst ts = Math.floor(Date.now()/1000).toString();\nconst sig = 'hmac-sha256=' + crypto.createHmac('sha256', $env.PLATFORM_HMAC_SECRET).update(ts + '.' + body).digest('hex');\nreturn [{ json: { taskId, body, ts, sig } }];"
+      },
+      "id": "a1b2c3d4-1111-4000-8000-000000000030",
+      "name": "HMAC create QA execution",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [920, 460]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.REGISTRY_BASE_URL }}/internal/v1/tasks/{{ $json.taskId }}/executions",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Content-Type", "value": "application/json" },
+            { "name": "X-Platform-Timestamp", "value": "={{ $json.ts }}" },
+            { "name": "X-Platform-Signature", "value": "={{ $json.sig }}" }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{ $json.body }}",
+        "options": {}
+      },
+      "id": "a1b2c3d4-1111-4000-8000-000000000031",
+      "name": "Registry create QA execution",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1140, 460]
+    },
+    {
+      "parameters": {
+        "jsCode": "const crypto = require('crypto');\nconst norm = $('Normalize envelope').item.json;\nconst executionId = $json.id;\nconst body = JSON.stringify({\n  taskId: norm.taskId,\n  executionId,\n  role: 'TESTER',\n  repoUrl: ($env.AGENT_REPO_URL || $env.GITLAB_REPO_URL || $env.GITHUB_REPO_URL || ''),\n  prUrl: norm.prUrl,\n  promptContext: { taskId: norm.taskId, executionId, prUrl: norm.prUrl || '', issueBody: 'Run full QA.' }\n});\nconst ts = Math.floor(Date.now()/1000).toString();\nconst sig = 'hmac-sha256=' + crypto.createHmac('sha256', $env.PLATFORM_HMAC_SECRET).update(ts + '.' + body).digest('hex');\nreturn [{ json: { body, ts, sig } }];"
+      },
+      "id": "a1b2c3d4-1111-4000-8000-000000000032",
+      "name": "HMAC spawn QA agent",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1360, 460]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.BRIDGE_BASE_URL }}/internal/v1/agents",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Content-Type", "value": "application/json" },
+            { "name": "X-Platform-Timestamp", "value": "={{ $json.ts }}" },
+            { "name": "X-Platform-Signature", "value": "={{ $json.sig }}" }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{ $json.body }}",
+        "options": {}
+      },
+      "id": "a1b2c3d4-1111-4000-8000-000000000033",
+      "name": "Bridge spawn QA",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1580, 460]
+    }
+  ],
+  "connections": {
+    "Task state webhook": { "main": [[{ "node": "Normalize envelope", "type": "main", "index": 0 }]] },
+    "Normalize envelope": { "main": [[{ "node": "Switch on state", "type": "main", "index": 0 }]] },
+    "Switch on state": {
+      "main": [
+        [{ "node": "HMAC create execution DEV", "type": "main", "index": 0 }],
+        [{ "node": "HMAC create REV execution", "type": "main", "index": 0 }],
+        [{ "node": "HMAC create QA execution", "type": "main", "index": 0 }]
+      ]
+    },
+    "HMAC create execution DEV": { "main": [[{ "node": "Registry create DEV execution", "type": "main", "index": 0 }]] },
+    "Registry create DEV execution": { "main": [[{ "node": "HMAC spawn DEV agent", "type": "main", "index": 0 }]] },
+    "HMAC spawn DEV agent": { "main": [[{ "node": "Bridge spawn DEV", "type": "main", "index": 0 }]] },
+    "HMAC create REV execution": { "main": [[{ "node": "Registry create REV execution", "type": "main", "index": 0 }]] },
+    "Registry create REV execution": { "main": [[{ "node": "HMAC spawn REV agent", "type": "main", "index": 0 }]] },
+    "HMAC spawn REV agent": { "main": [[{ "node": "Bridge spawn REV", "type": "main", "index": 0 }]] },
+    "HMAC create QA execution": { "main": [[{ "node": "Registry create QA execution", "type": "main", "index": 0 }]] },
+    "Registry create QA execution": { "main": [[{ "node": "HMAC spawn QA agent", "type": "main", "index": 0 }]] },
+    "HMAC spawn QA agent": { "main": [[{ "node": "Bridge spawn QA", "type": "main", "index": 0 }]] }
+  },
+  "active": false,
+  "settings": { "executionOrder": "v1" },
+  "meta": { "templateCredsSetupCompleted": true },
+  "tags": []
+}
