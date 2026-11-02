@@ -1,13 +1,17 @@
 # n8n workflows
 
-Import these workflows into n8n (**Workflows → Import from file**). Set environment variables in n8n (Settings → Variables) before activating.
+Import these workflows into n8n (**Workflows → Import from file**).
 
-| Variable | Example |
-|----------|---------|
-| `REGISTRY_BASE_URL` | `http://workflow-registry:8081` |
-| `BRIDGE_BASE_URL` | `http://cursor-bridge:8082` |
+With **`docker compose`** in `platform/`, n8n receives variables from [`.env`](../.env.example) (see `n8n` service in `docker-compose.yml`). Code nodes use `$env.REGISTRY_BASE_URL`, etc.
+
+| Variable | Docker compose default |
+|----------|-------------------------|
+| `REGISTRY_BASE_URL` | `http://host.docker.internal:8081` |
+| `BRIDGE_BASE_URL` | `http://host.docker.internal:8082` |
 | `PLATFORM_HMAC_SECRET` | same as `PLATFORM_INTERNAL_HMAC_SECRET` |
-| `GITHUB_REPO_URL` | `https://github.com/org/repo` |
+| `GITHUB_REPO_URL` | from `.env` |
+
+If n8n is not in Docker, set the same names under **Settings → Variables** or export them in the shell before starting n8n.
 
 ## Workflows
 

@@ -27,3 +27,37 @@ services:
     ports:
       - "5672:5672"
       - "15672:15672"
+
+  n8n:
+    image: n8nio/n8n:1.67.1
+    ports:
+      - "5678:5678"
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      N8N_HOST: localhost
+      N8N_PORT: 5678
+      N8N_PROTOCOL: http
+      WEBHOOK_URL: http://localhost:5678/
+      GENERIC_TIMEZONE: UTC
+      N8N_SECURE_COOKIE: "false"
+      N8N_BLOCK_ENV_ACCESS_IN_NODE: "false"
+      REGISTRY_BASE_URL: ${N8N_REGISTRY_BASE_URL:-http://host.docker.internal:8081}
+      BRIDGE_BASE_URL: ${N8N_BRIDGE_BASE_URL:-http://host.docker.internal:8082}
+      PLATFORM_HMAC_SECRET: ${PLATFORM_INTERNAL_HMAC_SECRET:-local-dev-secret}
+      GITHUB_REPO_URL: ${GITHUB_REPO_URL:-https://github.com/your-org/your-repo}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - n8n_data:/home/node/.n8n
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_started
+      rabbitmq:
+        condition: service_started
+
+volumes:
+  n8n_data:

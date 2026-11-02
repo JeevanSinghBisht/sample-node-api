@@ -1,5 +1,7 @@
 coverage/
 node_modules/
+.env
+platform/.env
 platform/ops-dashboard/dist/
 .vscode/
 output
