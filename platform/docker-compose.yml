@@ -1,44 +1,12 @@
-# Default: start only n8n (use when MySQL, Redis, RabbitMQ already run on the host).
+# Local MySQL, Redis, and RabbitMQ already installed on the host (ports 3306, 6379, 5672).
+# Spring Boot apps and Flyway use localhost via platform/.env — not this file.
 #
-#   docker compose up -d
+#   cd platform && docker compose up -d
 #
-# Optional: also start MySQL, Redis, RabbitMQ in Docker (needs ports 3306, 6379, 5672 free):
-#
-#   docker compose --profile infra up -d
+# Optional Docker MySQL/Redis/RabbitMQ (only if those ports are free on the host):
+#   docker compose -f docker-compose.yml -f docker-compose.infra.yml up -d
 
 services:
-  mysql:
-    profiles: ["infra"]
-    image: mysql:8.0
-    environment:
-      MYSQL_ROOT_PASSWORD: root
-      MYSQL_DATABASE: workflow_registry
-      MYSQL_USER: platform
-      MYSQL_PASSWORD: platform
-    ports:
-      - "${MYSQL_PUBLISH_PORT:-3306}:3306"
-    healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
-      interval: 5s
-      timeout: 5s
-      retries: 10
-
-  redis:
-    profiles: ["infra"]
-    image: redis:7-alpine
-    ports:
-      - "${REDIS_PUBLISH_PORT:-6379}:6379"
-
-  rabbitmq:
-    profiles: ["infra"]
-    image: rabbitmq:3-management-alpine
-    environment:
-      RABBITMQ_DEFAULT_USER: platform
-      RABBITMQ_DEFAULT_PASS: platform
-    ports:
-      - "${RABBITMQ_PUBLISH_PORT:-5672}:5672"
-      - "${RABBITMQ_MGMT_PUBLISH_PORT:-15672}:15672"
-
   n8n:
     image: n8nio/n8n:1.67.1
     ports:

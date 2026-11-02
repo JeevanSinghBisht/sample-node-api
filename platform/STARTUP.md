@@ -275,7 +275,7 @@ RABBITMQ_PASSWORD=guest
 
 ```bash
 cd platform
-docker compose --profile infra up -d
+docker compose -f docker-compose.yml -f docker-compose.infra.yml up -d
 ```
 
 This starts MySQL, Redis, RabbitMQ, **and** n8n. Uses ports **3306**, **6379**, **5672**, **15672**, **5678**.
