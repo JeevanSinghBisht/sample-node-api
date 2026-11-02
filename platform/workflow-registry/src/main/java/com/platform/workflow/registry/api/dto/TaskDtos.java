@@ -39,6 +39,7 @@ public final class TaskDtos {
             int issueNumber,
             @NotBlank String issueUrl,
             @NotBlank String title,
+            String issueBody,
             @NotBlank String idempotencyKey,
             ActorType actorType,
             String actorId) {}

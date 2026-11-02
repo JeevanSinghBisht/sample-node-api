@@ -1,6 +1,7 @@
 package com.platform.workflow.registry.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.platform.workflow.registry.domain.ActorType;
 import com.platform.workflow.registry.domain.TaskState;
@@ -124,12 +125,16 @@ public class TaskTransitionService {
         payload.put("taskId", task.getId());
         payload.put("repoFullName", task.getRepoConfig().getFullName());
         payload.put("issueNumber", task.getIssueNumber());
+        payload.put("issueUrl", task.getIssueUrl());
+        payload.put("issueTitle", task.getTitle());
+        issueBodyFromTask(task).ifPresent(body -> payload.put("issueBody", body));
         payload.put("previousState", fromState.name());
         payload.put("state", toState.name());
         payload.put("attemptDev", task.getAttemptDev());
         payload.put("attemptReview", task.getAttemptReview());
         payload.put("attemptQa", task.getAttemptQa());
         payload.put("prNumber", task.getPrNumber());
+        payload.put("prUrl", task.getPrUrl());
         payload.put("headSha", task.getHeadSha());
         if (metadata != null) {
             payload.put("metadata", metadata);
@@ -140,6 +145,22 @@ public class TaskTransitionService {
                 PlatformEventTypes.TASK_STATE_CHANGED, task.getId(), eventIdempotency, payload);
         String routingKey = "platform.task.state." + toState.name();
         outboxService.enqueue(envelope, routingKey);
+    }
+
+    private Optional<String> issueBodyFromTask(WorkflowTask task) {
+        String json = task.getMetadataJson();
+        if (json == null || json.isBlank()) {
+            return Optional.empty();
+        }
+        try {
+            JsonNode node = objectMapper.readTree(json);
+            if (node.hasNonNull("issueBody")) {
+                return Optional.of(node.get("issueBody").asText());
+            }
+        } catch (JsonProcessingException ignored) {
+            // ignore malformed metadata
+        }
+        return Optional.empty();
     }
 
     private String serializeMetadata(Map<String, Object> metadata) {

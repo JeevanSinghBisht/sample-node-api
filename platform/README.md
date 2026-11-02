@@ -4,6 +4,8 @@ Maven multi-module skeleton for the event-driven SD platform. The **workflow-reg
 
 **Start here:** [STARTUP.md](STARTUP.md) — prerequisites, Cursor API keys, copy-paste commands, first task.
 
+**GitLab (manual trigger, no GitHub webhooks):** [GITLAB-MANUAL.md](GITLAB-MANUAL.md)
+
 ## Modules
 
 | Module | Port | Description |

@@ -127,6 +127,7 @@ public class GitHubWebhookService {
                 issueNumber,
                 issueUrl,
                 title,
+                issue.path("body").asText(null),
                 idempotencyKey,
                 ActorType.GITHUB_WEBHOOK,
                 "github"));

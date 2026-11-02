@@ -28,7 +28,8 @@ services:
       REGISTRY_BASE_URL: ${N8N_REGISTRY_BASE_URL:-http://host.docker.internal:8081}
       BRIDGE_BASE_URL: ${N8N_BRIDGE_BASE_URL:-http://host.docker.internal:8082}
       PLATFORM_HMAC_SECRET: ${PLATFORM_INTERNAL_HMAC_SECRET:-local-dev-secret}
-      GITHUB_REPO_URL: ${GITHUB_REPO_URL:-https://github.com/JeevanSinghBisht/testing.git}
+      GITHUB_REPO_URL: ${GITHUB_REPO_URL:-https://gitlab.com/example/group/project}
+      REPO_DEFAULT_REF: ${REPO_DEFAULT_REF:-main}
     extra_hosts:
       - "host.docker.internal:host-gateway"
     volumes:

@@ -50,6 +50,7 @@ public class InternalTaskController {
                 request.issueNumber(),
                 request.issueUrl(),
                 request.title(),
+                request.issueBody(),
                 request.idempotencyKey(),
                 request.actorType() != null ? request.actorType() : ActorType.N8N,
                 request.actorId()));
