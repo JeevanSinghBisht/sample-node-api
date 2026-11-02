@@ -6,6 +6,98 @@ All paths assume you are in the repository root unless noted.
 
 ---
 
+## 0. Checkout the repository
+
+Platform code lives on branch **`cursor/agent-dev-platform-arch-ec4b`** in [JeevanSinghBisht/sample-node-api](https://github.com/JeevanSinghBisht/sample-node-api).
+
+### Fresh clone
+
+```bash
+git clone https://github.com/JeevanSinghBisht/sample-node-api.git
+cd sample-node-api
+git fetch origin cursor/agent-dev-platform-arch-ec4b
+git checkout cursor/agent-dev-platform-arch-ec4b
+```
+
+Confirm the `platform/` folder exists:
+
+```bash
+ls platform/README.md platform/STARTUP.md
+```
+
+### Already cloned (switch to platform branch)
+
+```bash
+cd sample-node-api
+git fetch origin
+git checkout cursor/agent-dev-platform-arch-ec4b
+git pull origin cursor/agent-dev-platform-arch-ec4b
+```
+
+### One-shot: checkout + configure for real Cursor Cloud Agents
+
+Run from any directory (creates `sample-node-api` if needed). **Replace** `crsr_…` and the GitHub repo URL with yours:
+
+```bash
+git clone https://github.com/JeevanSinghBisht/sample-node-api.git
+cd sample-node-api
+git checkout cursor/agent-dev-platform-arch-ec4b
+
+cd platform
+cp .env.example .env
+
+# Edit .env — at minimum set these three (use your editor or sed):
+#   CURSOR_API_KEY=crsr_your_key_here
+#   CURSOR_MOCK_ENABLED=false
+#   GITHUB_REPO_URL=https://github.com/YOUR_ORG/YOUR_REPO
+
+set -a && source .env && set +a
+docker compose up -d
+```
+
+Then continue with **§5** (n8n import) and **§6** (start Java services), or use the full sequence in **§ Quick run checklist** below.
+
+---
+
+## Quick run checklist (with Cursor Cloud key)
+
+```bash
+# 1) Checkout (see §0)
+git clone https://github.com/JeevanSinghBisht/sample-node-api.git
+cd sample-node-api && git checkout cursor/agent-dev-platform-arch-ec4b
+
+# 2) Env — add CURSOR_API_KEY from Cursor Dashboard → API Keys
+cd platform
+cp .env.example .env
+# nano .env   →  CURSOR_API_KEY=crsr_...  CURSOR_MOCK_ENABLED=false  GITHUB_REPO_URL=https://github.com/org/repo
+
+# 3) Infrastructure
+set -a && source .env && set +a
+docker compose up -d
+
+# 4) n8n — browser: http://localhost:5678 → import n8n/*.json → activate both workflows
+
+# 5) Registry (terminal 1)
+cd platform && set -a && source .env && set +a
+mvn -pl workflow-registry spring-boot:run
+
+# 6) Bridge (terminal 2)
+cd platform && set -a && source .env && set +a
+mvn -pl cursor-bridge spring-boot:run
+
+# 7) Dashboard (terminal 3, optional)
+cd platform/ops-dashboard && npm install && npm run dev
+```
+
+Verify Cursor key before starting the bridge:
+
+```bash
+set -a && source platform/.env && set +a
+curl -s -u "$CURSOR_API_KEY:" https://api.cursor.com/v1/me
+```
+
+---
+
 ## Prerequisites
 
 Install on your machine:
