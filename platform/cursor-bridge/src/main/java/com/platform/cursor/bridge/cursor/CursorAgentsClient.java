@@ -78,8 +78,11 @@ public class CursorAgentsClient {
         prompt.put("text", promptText);
         root.put("name", truncateName(command.taskId() + " " + command.role()));
 
-        ObjectNode model = root.putObject("model");
-        model.put("id", command.modelId() != null ? command.modelId() : properties.getDefaultModelId());
+        String modelId = resolveModelId(command);
+        if (modelId != null && !modelId.isBlank()) {
+            ObjectNode model = root.putObject("model");
+            model.put("id", modelId);
+        }
 
         ArrayNode repos = root.putArray("repos");
         ObjectNode repo = repos.addObject();
@@ -109,6 +112,15 @@ public class CursorAgentsClient {
         }
 
         return root;
+    }
+
+    /** When blank, Cursor uses the API key owner's configured default model. */
+    private String resolveModelId(SpawnAgentCommand command) {
+        if (command.modelId() != null && !command.modelId().isBlank()) {
+            return command.modelId().trim();
+        }
+        String configured = properties.getDefaultModelId();
+        return configured != null ? configured.trim() : "";
     }
 
     private String extractBranch(JsonNode agent) {

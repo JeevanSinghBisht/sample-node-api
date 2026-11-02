@@ -10,7 +10,8 @@ spring:
       port: ${REDIS_PORT:6379}
 
 platform:
-  default-model-id: composer-2
+  # Leave empty to omit model from API requests (Cursor account default). Override with CURSOR_DEFAULT_MODEL_ID.
+  default-model-id: ${CURSOR_DEFAULT_MODEL_ID:}
   cursor:
     base-url: https://api.cursor.com
     api-key: ${CURSOR_API_KEY:}

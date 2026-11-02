@@ -9,7 +9,7 @@ public class BridgeProperties {
     private Registry registry = new Registry();
     private InternalApi internal = new InternalApi();
     private Webhooks webhooks = new Webhooks();
-    private String defaultModelId = "composer-2";
+    private String defaultModelId = "";
 
     public CursorApi getCursor() {
         return cursor;
