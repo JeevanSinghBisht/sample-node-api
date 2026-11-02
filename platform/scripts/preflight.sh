@@ -52,13 +52,13 @@ else
 fi
 
 code="$(curl -s -o /dev/null -w '%{http_code}' "$REGISTRY/actuator/health" 2>/dev/null || echo 000)"
-if [[ "$code" == "200" ]]; then ok "registry $REGISTRY"; else warn "registry not up yet ($REGISTRY → HTTP $code)"
+if [[ "$code" == "200" ]]; then ok "registry $REGISTRY"; else warn "registry not up yet ($REGISTRY → HTTP $code)"; fi
 
 code="$(curl -s -o /dev/null -w '%{http_code}' "$BRIDGE/actuator/health" 2>/dev/null || echo 000)"
-if [[ "$code" == "200" ]]; then ok "bridge $BRIDGE"; else warn "bridge not up yet ($BRIDGE → HTTP $code)"
+if [[ "$code" == "200" ]]; then ok "bridge $BRIDGE"; else warn "bridge not up yet ($BRIDGE → HTTP $code)"; fi
 
 code="$(curl -s -o /dev/null -w '%{http_code}' "http://localhost:5678" 2>/dev/null || echo 000)"
-if [[ "$code" =~ ^(200|301|302)$ ]]; then ok "n8n http://localhost:5678"; else warn "n8n not reachable on :5678"
+if [[ "$code" =~ ^(200|301|302)$ ]]; then ok "n8n http://localhost:5678"; else warn "n8n not reachable on :5678"; fi
 
 echo "=== Done ==="
 if [[ "$FAILED" -eq 1 ]]; then
