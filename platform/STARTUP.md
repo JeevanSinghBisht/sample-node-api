@@ -78,13 +78,16 @@ docker compose up -d
 
 # 4) n8n — browser: http://localhost:5678 → import n8n/*.json → activate both workflows
 
-# 5) Registry (terminal 1)
-cd platform && set -a && source .env && set +a
-mvn -pl workflow-registry spring-boot:run
+# 5) Build shared modules once (required — workflow-registry depends on platform-common)
+cd platform && mvn install -DskipTests
 
-# 6) Bridge (terminal 2)
+# 6) Registry (terminal 1)
 cd platform && set -a && source .env && set +a
-mvn -pl cursor-bridge spring-boot:run
+mvn -pl workflow-registry -am spring-boot:run
+
+# 7) Bridge (terminal 2)
+cd platform && set -a && source .env && set +a
+mvn -pl cursor-bridge -am spring-boot:run
 
 # 7) Dashboard (terminal 3, optional)
 cd platform/ops-dashboard && npm install && npm run dev
