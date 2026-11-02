@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Quick checks before starting the GitLab manual workflow.
-set -u
+# Note: no "set -u" — .env may omit optional vars; health checks default code=000.
 
 RED='\033[0;31m'
 GREEN='\033[0;32m'
