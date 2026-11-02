@@ -28,9 +28,10 @@ docker compose up -d   # n8n only — use existing local MySQL/Redis/RabbitMQ
 # docker compose -f docker-compose.yml -f docker-compose.infra.yml up -d
 
 set -a && source .env && set +a
-mvn -pl workflow-registry spring-boot:run
+mvn install -DskipTests
+mvn -pl workflow-registry -am spring-boot:run
 # separate terminal (same env):
-mvn -pl cursor-bridge spring-boot:run
+mvn -pl cursor-bridge -am spring-boot:run
 
 # Ops dashboard (proxies /api → registry :8081)
 cd ops-dashboard && npm install && npm run dev
