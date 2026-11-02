@@ -89,7 +89,7 @@ mvn -pl workflow-registry -am spring-boot:run
 cd platform && set -a && source .env && set +a
 mvn -pl cursor-bridge -am spring-boot:run
 
-# 7) Dashboard (terminal 3, optional)
+# 8) Dashboard (terminal 3, optional)
 cd platform/ops-dashboard && npm install && npm run dev
 ```
 
@@ -327,13 +327,24 @@ If you change webhook URLs or `.env`, restart the Java services (step 6).
 
 Use **two terminals**, both with env loaded (`set -a && source .env && set +a` from `platform/`).
 
+**One-time build** (installs `platform-common` into your local `~/.m2`):
+
+```bash
+cd platform
+mvn install -DskipTests
+```
+
+Re-run after `git pull` if `platform-common` changed.
+
 **Terminal A — workflow-registry (port 8081):**
 
 ```bash
 cd platform
 set -a && source .env && set +a
-mvn -pl workflow-registry spring-boot:run
+mvn -pl workflow-registry -am spring-boot:run
 ```
+
+The `-am` flag also builds **platform-common** (required dependency). Alternatively: `mvn install -DskipTests` once, then `mvn -pl workflow-registry spring-boot:run`.
 
 Wait until Flyway migrations finish and the app listens on **8081**.
 
@@ -342,7 +353,7 @@ Wait until Flyway migrations finish and the app listens on **8081**.
 ```bash
 cd platform
 set -a && source .env && set +a
-mvn -pl cursor-bridge spring-boot:run
+mvn -pl cursor-bridge -am spring-boot:run
 ```
 
 Health checks:
@@ -431,7 +442,9 @@ Full template: [`.env.example`](.env.example).
 
 | Symptom | What to check |
 |---------|----------------|
-| `failed to bind host port … 5672` (or 3306 / 6379) | MySQL/Redis/RabbitMQ already on host → use **Option A**: `docker compose up -d` (n8n only), not `--profile infra`. Run `docker compose down` first. |
+| `platform-common:jar:0.1.0-SNAPSHOT is missing` | Run from `platform/`: `mvn install -DskipTests` **or** use `-am`: `mvn -pl workflow-registry -am spring-boot:run` |
+| Hibernate `max_dev_attempts` / `tinyint` vs `integer` | Pull latest and restart registry — Flyway applies **V2** migration. Or run `mvn -pl workflow-registry -am spring-boot:run` after `git pull`. |
+| `failed to bind host port … 5672` (or 3306 / 6379) | MySQL/Redis/RabbitMQ already on host → use **Option A**: `docker compose up -d` (n8n only), not `docker-compose.infra.yml`. Run `docker compose down` first. |
 | Registry won’t start | MySQL reachable? Database `workflow_registry` exists? `.env` credentials match your local MySQL |
 | n8n workflow doesn’t run | Workflows **activated**? `N8N_TASK_STATE_WEBHOOK_URL` set and registry restarted |
 | n8n can’t reach registry | Spring on **host**; `.env` has `N8N_REGISTRY_BASE_URL=http://host.docker.internal:8081` (Linux: compose includes `host-gateway`) |
