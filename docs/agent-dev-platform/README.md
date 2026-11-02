@@ -25,9 +25,13 @@ This folder defines the architecture for a software development platform where *
 6. On approval → **Tester** agent runs QA (CI + scripted checks).
 7. On success → PR marked ready for human merge; task → `AWAITING_HUMAN`.
 
+## Code scaffold
+
+Spring Boot multi-module skeleton lives in [`platform/`](../../platform/README.md) (`workflow-registry` service).
+
 ## Implementation order (suggested)
 
-1. MySQL schema + **workflow-registry** Spring Boot service (internal APIs for n8n).
+1. MySQL schema + **workflow-registry** Spring Boot service (internal APIs for n8n) — **scaffolded**.
 2. GitHub App webhooks → RabbitMQ → n8n trigger workflow.
 3. **cursor-bridge** service: launch agents, receive completion webhooks, map to events.
 4. n8n main workflow + rejection/retry sub-workflows.
