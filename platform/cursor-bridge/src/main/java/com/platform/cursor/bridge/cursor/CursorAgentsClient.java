@@ -124,6 +124,9 @@ public class CursorAgentsClient {
 
     private String authorizationHeader() {
         String apiKey = properties.getCursor().getApiKey();
+        if (apiKey != null) {
+            apiKey = apiKey.trim();
+        }
         if (apiKey == null || apiKey.isBlank()) {
             return "Basic " + Base64.getEncoder().encodeToString(":".getBytes(StandardCharsets.UTF_8));
         }

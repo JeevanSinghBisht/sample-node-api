@@ -150,6 +150,27 @@ curl -s -u "$CURSOR_API_KEY:" https://api.cursor.com/v1/me
 
 If that returns your identity JSON, the key works for the Cloud Agents API.
 
+Same check with Bearer (equivalent):
+
+```bash
+curl -s -H "Authorization: Bearer $CURSOR_API_KEY" https://api.cursor.com/v1/me
+```
+
+**If you see `{"code":"error","message":"Invalid User API Key"}`**
+
+The curl format is usually fine; the **key type or value** is wrong for Cloud Agents:
+
+| Cause | Fix |
+|--------|-----|
+| Key is not a **Cloud Agents user API key** | [Dashboard → API Keys](https://cursor.com/dashboard) → create a **user** key for Cloud Agents / SDK (not an IDE-only token, not a random “integration” secret from another product). |
+| Key starts with `grok_` | Not supported on Cloud Agents — create a normal user key (`crsr_…` / `cursor_…`). |
+| Team **admin** or **automation/webhook** key | Use a **user API key** or a **service account** key from team settings (see [API overview](https://cursor.com/docs/api)). |
+| Whitespace or quotes in `.env` | Use `CURSOR_API_KEY=crsr_abc...` with **no** surrounding quotes; re-`source .env`. Check: `echo "${#CURSOR_API_KEY}"` and `printf '%.6s\n' "$CURSOR_API_KEY"`. |
+| Revoked / re-copied incompletely | Create a **new** key and replace `.env`; old keys cannot be viewed again. |
+| Wrong shell variable | Run `set -a && source .env && set +a` from `platform/` before curl. |
+
+Until `/v1/me` works, you can still test the platform with `CURSOR_MOCK_ENABLED=true` in `.env` (bridge fakes agent IDs; no Cursor API calls).
+
 ### 1.3 (Optional) Cloud environment name
 
 If you use a **named Cursor cloud environment** (prebuilt install for Java/Maven/Node), note its **environment name** from the dashboard (Cloud Agents → Environments). You can pass it when spawning agents as `environmentId` in n8n/bridge payloads (`env.name` in the Cursor API).
@@ -446,6 +467,7 @@ Full template: [`.env.example`](.env.example).
 | Hibernate schema-validation (`tinyint`, `char` vs `varchar`, `enum`, …) | Pull latest and restart registry — Flyway applies **V2** and **V3**. No need to drop the database. |
 | Flyway **V3** failed (`fk_task_repo` incompatible / failed migration) | Pull latest (fixed V3), then clear the failed row if present: `mysql workflow_registry -e "DELETE FROM flyway_schema_history WHERE version='3' AND success=0;"` and restart **workflow-registry**. |
 | `failed to bind host port … 5672` (or 3306 / 6379) | MySQL/Redis/RabbitMQ already on host → use **Option A**: `docker compose up -d` (n8n only), not `docker-compose.infra.yml`. Run `docker compose down` first. |
+| `Invalid User API Key` on `curl …/v1/me` | See **§1.2** table (key type, `grok_`, quotes in `.env`). Try Bearer header. Use mock mode meanwhile. |
 | Registry won’t start | MySQL reachable? Database `workflow_registry` exists? `.env` credentials match your local MySQL |
 | n8n workflow doesn’t run | Workflows **activated**? `N8N_TASK_STATE_WEBHOOK_URL` set and registry restarted |
 | n8n can’t reach registry | Spring on **host**; `.env` has `N8N_REGISTRY_BASE_URL=http://host.docker.internal:8081` (Linux: compose includes `host-gateway`) |
