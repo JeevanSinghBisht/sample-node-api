@@ -58,7 +58,8 @@ public class TaskOperatorService {
         WorkflowTask task = loadTask(taskId);
         List<String> actions = new ArrayList<>();
         TaskState state = task.getState();
-        if (DEV_ENTRY_STATES.contains(state)) {
+        if (DEV_ENTRY_STATES.contains(state)
+                || (state == TaskState.DEVELOPING && findActiveExecution(taskId) == null)) {
             actions.add("RUN_DEVELOPER");
         }
         if (state == TaskState.IN_REVIEW) {
@@ -90,6 +91,9 @@ public class TaskOperatorService {
                     spawned.runId());
         } catch (CursorBridgeClientException e) {
             runService.markSpawnFailed(prepared.executionId(), e.getMessage());
+            if (role == ExecutionRole.DEVELOPER) {
+                runService.revertDeveloperSpawnFailure(taskId, prepared.executionId(), operatorId);
+            }
             throw e;
         }
     }

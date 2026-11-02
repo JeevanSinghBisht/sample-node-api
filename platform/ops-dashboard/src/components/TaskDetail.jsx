@@ -151,7 +151,7 @@ export default function TaskDetail() {
             type="button"
             className="btn-secondary"
             disabled={!has('RUN_REVIEWER') || !!busy}
-            onClick={() => runAction('rev', runReviewer.bind(null, taskId))}
+            onClick={() => runAction('rev', () => runReviewer(taskId))}
           >
             {busy === 'rev' ? 'Starting…' : 'Run reviewer'}
           </button>
@@ -159,7 +159,7 @@ export default function TaskDetail() {
             type="button"
             className="btn-secondary"
             disabled={!has('RUN_TESTER') || !!busy}
-            onClick={() => runAction('qa', runTester.bind(null, taskId))}
+            onClick={() => runAction('qa', () => runTester(taskId))}
           >
             {busy === 'qa' ? 'Starting…' : 'Run tester'}
           </button>
@@ -175,7 +175,15 @@ export default function TaskDetail() {
           )}
         </div>
         {!has('RUN_DEVELOPER') && !has('RUN_REVIEWER') && !has('RUN_TESTER') && !has('HUMAN_APPROVE') && (
-          <p className="muted">No manual actions for state {task.state}. Wait for an agent run or report completion below.</p>
+          <p className="muted">
+            No manual actions for state {task.state}. If an agent is running, wait for it to finish or report completion
+            below.
+          </p>
+        )}
+        {task.state === 'DEV_FAILED' && (
+          <p className="muted small">
+            Developer spawn or run failed. Fix cursor-bridge / Cursor API / repo access, then click Run developer again.
+          </p>
         )}
       </div>
 

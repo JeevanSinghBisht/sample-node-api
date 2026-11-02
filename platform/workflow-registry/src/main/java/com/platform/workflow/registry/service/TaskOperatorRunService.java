@@ -88,6 +88,23 @@ public class TaskOperatorRunService {
                         null));
     }
 
+    /** After a failed bridge spawn during dev, move task back so the dashboard can retry. */
+    @Transactional
+    public void revertDeveloperSpawnFailure(String taskId, String executionId, String operatorId) {
+        WorkflowTask task = loadTask(taskId);
+        if (task.getState() != TaskState.DEVELOPING) {
+            return;
+        }
+        transitionService.transition(
+                taskId,
+                TaskState.DEV_FAILED,
+                "developer_spawn_failed",
+                "spawn-fail-" + executionId,
+                ActorType.HUMAN,
+                operatorId != null ? operatorId : "dashboard-operator",
+                null);
+    }
+
     private void ensureDeveloperState(WorkflowTask task, String idempotencyKey, String operatorId) {
         TaskState state = task.getState();
         if (state == TaskState.DEVELOPING) {
