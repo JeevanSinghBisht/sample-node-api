@@ -2,6 +2,8 @@
 
 Maven multi-module skeleton for the event-driven SD platform. The **workflow-registry** service is the orchestration source of truth (MySQL), publishes domain events via a transactional outbox to RabbitMQ, and exposes internal APIs for n8n.
 
+**Start here:** [STARTUP.md](STARTUP.md) — prerequisites, Cursor API keys, copy-paste commands, first task.
+
 ## Modules
 
 | Module | Port | Description |
