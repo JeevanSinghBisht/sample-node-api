@@ -8,8 +8,8 @@ class HmacAuthFilterTest {
 
     @Test
     void hmac_isDeterministic() {
-        String a = HmacAuthFilter.hmacSha256Hex("secret", "1730534400.{}");
-        String b = HmacAuthFilter.hmacSha256Hex("secret", "1730534400.{}");
+        String a = com.platform.common.security.PlatformHmac.hmacSha256Hex("secret", "1730534400.{}");
+        String b = com.platform.common.security.PlatformHmac.hmacSha256Hex("secret", "1730534400.{}");
         assertEquals(a, b);
     }
 }

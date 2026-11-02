@@ -6,9 +6,11 @@ Maven multi-module skeleton for the event-driven SD platform. The **workflow-reg
 
 | Module | Port | Description |
 |--------|------|-------------|
+| `platform-common` | — | Shared HMAC helpers |
 | `workflow-registry` | 8081 | Tasks, transitions, executions, outbox relay |
+| `cursor-bridge` | 8082 | Cursor Cloud Agents API + completion webhooks |
 
-Future: `cursor-bridge`, `github-ingest`.
+Future: `github-ingest`.
 
 ## Quick start
 
@@ -16,7 +18,10 @@ Future: `cursor-bridge`, `github-ingest`.
 cd platform
 docker compose up -d
 export PLATFORM_INTERNAL_HMAC_SECRET=local-dev-secret
+export CURSOR_MOCK_ENABLED=true   # local dev without Cursor API key
 mvn -pl workflow-registry spring-boot:run
+# separate terminal:
+mvn -pl cursor-bridge spring-boot:run
 ```
 
 Flyway applies `workflow-registry/src/main/resources/db/migration/V1__workflow.sql` on startup.
@@ -37,6 +42,15 @@ All `/internal/v1/**` routes require HMAC headers when `platform.internal.hmac-e
 | `PATCH` | `/internal/v1/executions/{executionId}` |
 
 Public read API (no HMAC in scaffold): `GET /api/v1/tasks`, `GET /api/v1/tasks/{taskId}`.
+
+## cursor-bridge (n8n + Cursor)
+
+| Method | Path | Auth |
+|--------|------|------|
+| `POST` | `/internal/v1/agents` or `/agents` | HMAC (same as registry) |
+| `POST` | `/webhooks/v1/agent-completions` | Optional `X-Platform-Completion-Secret` |
+
+Set `CURSOR_API_KEY` for real agent launches (Cursor Cloud Agents API `POST /v1/agents`). Use `CURSOR_MOCK_ENABLED=true` for local integration without API calls.
 
 ## Architecture docs
 

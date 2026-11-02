@@ -1,0 +1,33 @@
+server:
+  port: 8082
+
+spring:
+  application:
+    name: cursor-bridge
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+
+platform:
+  default-model-id: composer-2
+  cursor:
+    base-url: https://api.cursor.com
+    api-key: ${CURSOR_API_KEY:}
+    mock-enabled: ${CURSOR_MOCK_ENABLED:false}
+  registry:
+    base-url: ${REGISTRY_BASE_URL:http://localhost:8081}
+    hmac-secret: ${PLATFORM_INTERNAL_HMAC_SECRET:change-me-in-production}
+  internal:
+    hmac-enabled: true
+    hmac-secret: ${PLATFORM_INTERNAL_HMAC_SECRET:change-me-in-production}
+    max-timestamp-skew-seconds: 300
+  webhooks:
+    completion-secret: ${PLATFORM_COMPLETION_WEBHOOK_SECRET:}
+    n8n-completion-url: ${N8N_AGENT_COMPLETION_WEBHOOK_URL:}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics

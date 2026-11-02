@@ -19,7 +19,9 @@
     <description>Event-driven multi-agent SD platform (Spring Boot)</description>
 
     <modules>
+        <module>platform-common</module>
         <module>workflow-registry</module>
+        <module>cursor-bridge</module>
     </modules>
 
     <properties>

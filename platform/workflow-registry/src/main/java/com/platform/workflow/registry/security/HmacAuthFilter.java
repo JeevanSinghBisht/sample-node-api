@@ -61,28 +61,13 @@ public class HmacAuthFilter extends OncePerRequestFilter {
 
         String body = new String(wrapped.getCachedBody(), StandardCharsets.UTF_8);
         String payload = timestamp + "." + body;
-        String expected = "hmac-sha256=" + hmacSha256Hex(secret, payload);
+        String expected = "hmac-sha256=" + com.platform.common.security.PlatformHmac.hmacSha256Hex(secret, payload);
         if (!constantTimeEquals(expected, signature.trim())) {
             response.sendError(HttpStatus.UNAUTHORIZED.value(), "Invalid signature");
             return;
         }
 
         filterChain.doFilter(wrapped, response);
-    }
-
-    static String hmacSha256Hex(String secret, String payload) {
-        try {
-            javax.crypto.Mac mac = javax.crypto.Mac.getInstance("HmacSHA256");
-            mac.init(new javax.crypto.spec.SecretKeySpec(secret.getBytes(StandardCharsets.UTF_8), "HmacSHA256"));
-            byte[] raw = mac.doFinal(payload.getBytes(StandardCharsets.UTF_8));
-            StringBuilder sb = new StringBuilder(raw.length * 2);
-            for (byte b : raw) {
-                sb.append(String.format("%02x", b));
-            }
-            return sb.toString();
-        } catch (Exception e) {
-            throw new IllegalStateException("HMAC failure", e);
-        }
     }
 
     private static boolean constantTimeEquals(String a, String b) {

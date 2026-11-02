@@ -33,6 +33,6 @@ Spring Boot multi-module skeleton lives in [`platform/`](../../platform/README.m
 
 1. MySQL schema + **workflow-registry** Spring Boot service (internal APIs for n8n) — **scaffolded**.
 2. GitHub App webhooks → RabbitMQ → n8n trigger workflow.
-3. **cursor-bridge** service: launch agents, receive completion webhooks, map to events.
+3. **cursor-bridge** service: launch agents, receive completion webhooks, map to events — **scaffolded** in `platform/cursor-bridge`.
 4. n8n main workflow + rejection/retry sub-workflows.
 5. React ops dashboard (read-only first, then human approval actions).
