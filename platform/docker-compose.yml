@@ -1,5 +1,14 @@
+# Default: start only n8n (use when MySQL, Redis, RabbitMQ already run on the host).
+#
+#   docker compose up -d
+#
+# Optional: also start MySQL, Redis, RabbitMQ in Docker (needs ports 3306, 6379, 5672 free):
+#
+#   docker compose --profile infra up -d
+
 services:
   mysql:
+    profiles: ["infra"]
     image: mysql:8.0
     environment:
       MYSQL_ROOT_PASSWORD: root
@@ -7,7 +16,7 @@ services:
       MYSQL_USER: platform
       MYSQL_PASSWORD: platform
     ports:
-      - "3306:3306"
+      - "${MYSQL_PUBLISH_PORT:-3306}:3306"
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
       interval: 5s
@@ -15,23 +24,25 @@ services:
       retries: 10
 
   redis:
+    profiles: ["infra"]
     image: redis:7-alpine
     ports:
-      - "6379:6379"
+      - "${REDIS_PUBLISH_PORT:-6379}:6379"
 
   rabbitmq:
+    profiles: ["infra"]
     image: rabbitmq:3-management-alpine
     environment:
       RABBITMQ_DEFAULT_USER: platform
       RABBITMQ_DEFAULT_PASS: platform
     ports:
-      - "5672:5672"
-      - "15672:15672"
+      - "${RABBITMQ_PUBLISH_PORT:-5672}:5672"
+      - "${RABBITMQ_MGMT_PUBLISH_PORT:-15672}:15672"
 
   n8n:
     image: n8nio/n8n:1.67.1
     ports:
-      - "5678:5678"
+      - "${N8N_PUBLISH_PORT:-5678}:5678"
     env_file:
       - path: .env
         required: false
@@ -51,13 +62,6 @@ services:
       - "host.docker.internal:host-gateway"
     volumes:
       - n8n_data:/home/node/.n8n
-    depends_on:
-      mysql:
-        condition: service_healthy
-      redis:
-        condition: service_started
-      rabbitmq:
-        condition: service_started
 
 volumes:
   n8n_data:

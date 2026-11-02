@@ -23,7 +23,9 @@ n8n import files: [`n8n/`](n8n/README.md).
 ```bash
 cd platform
 cp .env.example .env   # edit secrets / repo URL as needed
-docker compose up -d   # mysql, redis, rabbitmq, n8n (http://localhost:5678)
+docker compose up -d   # n8n only (http://localhost:5678) — use existing local MySQL/Redis/RabbitMQ
+# OR full stack in Docker if ports are free:
+# docker compose --profile infra up -d
 
 set -a && source .env && set +a
 mvn -pl workflow-registry spring-boot:run

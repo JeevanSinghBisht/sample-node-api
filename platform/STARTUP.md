@@ -109,7 +109,7 @@ Install on your machine:
 | Docker + Compose | current | `docker compose version` |
 | Node.js | 18+ (dashboard only) | `node -version` |
 
-Clone the repo and use the branch that contains `platform/` (for example `cursor/agent-dev-platform-arch-ec4b`).
+See **§0** for checkout commands.
 
 ---
 
@@ -233,19 +233,60 @@ Get-Content .env | ForEach-Object {
 
 ## 4. Start infrastructure (Docker)
 
+### Option A — You already run MySQL, Redis, and RabbitMQ locally (recommended for you)
+
+Do **not** start duplicate containers on ports 3306 / 6379 / 5672. Start **n8n only**:
+
 ```bash
 cd platform
-docker compose up -d
+docker compose down   # clear any failed partial stack
+docker compose up -d  # starts n8n only (port 5678)
 ```
+
+Point `.env` at your **existing** services (defaults are `localhost` and standard ports):
+
+| Variable | Typical local value |
+|----------|---------------------|
+| `MYSQL_HOST` / `MYSQL_PORT` | `localhost` / `3306` |
+| `REDIS_HOST` / `REDIS_PORT` | `localhost` / `6379` |
+| `RABBITMQ_HOST` / `RABBITMQ_PORT` | `localhost` / `5672` |
+| `RABBITMQ_USER` / `RABBITMQ_PASSWORD` | your RabbitMQ credentials |
+
+Create the registry database once on your MySQL (adjust user/password to match `.env`):
+
+```sql
+CREATE DATABASE IF NOT EXISTS workflow_registry CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+CREATE USER IF NOT EXISTS 'platform'@'localhost' IDENTIFIED BY 'platform';
+GRANT ALL PRIVileges ON workflow_registry.* TO 'platform'@'localhost';
+FLUSH PRIVILEGES;
+```
+
+Flyway runs migrations automatically when **workflow-registry** starts.
+
+If RabbitMQ uses the default `guest` user, it often only allows connections from localhost — that is fine for Spring on the host. Set in `.env`:
+
+```bash
+RABBITMQ_USER=guest
+RABBITMQ_PASSWORD=guest
+```
+
+### Option B — Full stack in Docker (empty machine, ports free)
+
+```bash
+cd platform
+docker compose --profile infra up -d
+```
+
+This starts MySQL, Redis, RabbitMQ, **and** n8n. Uses ports **3306**, **6379**, **5672**, **15672**, **5678**.
+
+If those ports are already taken, either use **Option A** or map alternate host ports in `.env` (see `MYSQL_PUBLISH_PORT`, `RABBITMQ_PUBLISH_PORT`, etc. in `.env.example`) and set `MYSQL_PORT` / `RABBITMQ_PORT` / `REDIS_PORT` to match.
+
+### After compose
 
 | Service | URL / port |
 |---------|------------|
-| MySQL | `localhost:3306` (db `workflow_registry`, user/pass `platform`) |
-| Redis | `localhost:6379` |
-| RabbitMQ | AMQP `localhost:5672`, UI http://localhost:15672 (`platform` / `platform`) |
 | n8n | http://localhost:5678 |
-
-Check:
+| MySQL / Redis / RabbitMQ | Your host **or** Docker `--profile infra` (see above) |
 
 ```bash
 docker compose ps
