@@ -71,8 +71,9 @@ cd platform
 cp .env.example .env
 # nano .env   →  CURSOR_API_KEY=crsr_...  CURSOR_MOCK_ENABLED=false  GITHUB_REPO_URL=https://github.com/org/repo
 
-# 3) Infrastructure
+# 3) Infrastructure (n8n only if MySQL/Redis/RabbitMQ already on host)
 set -a && source .env && set +a
+docker compose down
 docker compose up -d
 
 # 4) n8n — browser: http://localhost:5678 → import n8n/*.json → activate both workflows
@@ -257,7 +258,7 @@ Create the registry database once on your MySQL (adjust user/password to match `
 ```sql
 CREATE DATABASE IF NOT EXISTS workflow_registry CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 CREATE USER IF NOT EXISTS 'platform'@'localhost' IDENTIFIED BY 'platform';
-GRANT ALL PRIVileges ON workflow_registry.* TO 'platform'@'localhost';
+GRANT ALL PRIVILEGES ON workflow_registry.* TO 'platform'@'localhost';
 FLUSH PRIVILEGES;
 ```
 
@@ -427,7 +428,8 @@ Full template: [`.env.example`](.env.example).
 
 | Symptom | What to check |
 |---------|----------------|
-| Registry won’t start | MySQL up? `docker compose ps`; ports 3306 free |
+| `failed to bind host port … 5672` (or 3306 / 6379) | MySQL/Redis/RabbitMQ already on host → use **Option A**: `docker compose up -d` (n8n only), not `--profile infra`. Run `docker compose down` first. |
+| Registry won’t start | MySQL reachable? Database `workflow_registry` exists? `.env` credentials match your local MySQL |
 | n8n workflow doesn’t run | Workflows **activated**? `N8N_TASK_STATE_WEBHOOK_URL` set and registry restarted |
 | n8n can’t reach registry | Spring on **host**; `.env` has `N8N_REGISTRY_BASE_URL=http://host.docker.internal:8081` (Linux: compose includes `host-gateway`) |
 | Cursor 401/403 | `CURSOR_API_KEY` valid? `curl -u "$CURSOR_API_KEY:" https://api.cursor.com/v1/me` |
