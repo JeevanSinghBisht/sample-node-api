@@ -255,16 +255,10 @@ Create a task via internal API (requires HMAC). Example using the same secret as
 
 ```bash
 cd platform
-source .env
-BODY='{"repoFullName":"your-org/your-repo","githubRepoId":0,"issueNumber":99,"issueUrl":"https://github.com/your-org/your-repo/issues/99","title":"Test task","idempotencyKey":"manual-99"}'
-TS=$(date +%s)
-SIG=$(python3 - <<PY
-import hmac, hashlib, os
-secret = os.environ["PLATFORM_INTERNAL_HMAC_SECRET"]
-payload = f"{os.environ['TS']}.{os.environ['BODY']}"
-print("hmac-sha256=" + hmac.new(secret.encode(), payload.encode(), hashlib.sha256).hexdigest())
-PY
-)
+set -a && source .env && set +a
+export BODY='{"repoFullName":"your-org/your-repo","githubRepoId":0,"issueNumber":99,"issueUrl":"https://github.com/your-org/your-repo/issues/99","title":"Test task","idempotencyKey":"manual-99"}'
+export TS=$(date +%s)
+export SIG=$(python3 -c "import hmac,hashlib,os; s=os.environ['PLATFORM_INTERNAL_HMAC_SECRET']; p=f\"{os.environ['TS']}.{os.environ['BODY']}\"; print('hmac-sha256='+hmac.new(s.encode(),p.encode(),hashlib.sha256).hexdigest())")
 curl -s -X POST http://localhost:8081/internal/v1/tasks/from-issue \
   -H "Content-Type: application/json" \
   -H "X-Platform-Timestamp: $TS" \
