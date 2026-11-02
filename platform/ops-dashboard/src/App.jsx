@@ -7,10 +7,12 @@ export default function App() {
   return (
     <div className="layout">
       <header className="header">
-        <Link to="/" className="brand">
-          Agent Platform Ops
-        </Link>
-        <span className="subtitle">workflow-registry dashboard</span>
+        <div className="header-inner">
+          <Link to="/" className="brand">
+            Agent Platform
+          </Link>
+          <span className="subtitle">Ops console · GitLab workflow</span>
+        </div>
       </header>
       <main className="main">
         <Routes>

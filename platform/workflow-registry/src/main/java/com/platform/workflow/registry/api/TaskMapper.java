@@ -35,6 +35,10 @@ public final class TaskMapper {
                 execution.getBcId(),
                 execution.getAgentUrl(),
                 execution.getBranchName(),
+                execution.getHeadSha(),
+                execution.getOutcome(),
+                execution.getSummary(),
+                execution.getFindingsJson(),
                 execution.getStartedAt(),
                 execution.getFinishedAt());
     }

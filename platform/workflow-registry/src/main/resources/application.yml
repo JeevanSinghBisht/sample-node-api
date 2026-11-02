@@ -46,6 +46,11 @@ platform:
     task-state-webhook-url: ${N8N_TASK_STATE_WEBHOOK_URL:}
   dashboard:
     allowed-origins: ${DASHBOARD_ALLOWED_ORIGINS:http://localhost:5173}
+  bridge:
+    base-url: ${BRIDGE_BASE_URL:http://localhost:8082}
+  agent:
+    repo-url: ${AGENT_REPO_URL:}
+    default-ref: ${REPO_DEFAULT_REF:main}
 
 management:
   endpoints:

@@ -69,8 +69,29 @@ public final class TaskDtos {
             String bcId,
             String agentUrl,
             String branchName,
+            String headSha,
+            String outcome,
+            String summary,
+            String findingsJson,
             Instant startedAt,
             Instant finishedAt) {}
+
+    public record TaskActionsResponse(List<String> availableActions) {}
+
+    public record RunAgentActionRequest(String idempotencyKey, String operatorId) {}
+
+    public record RunAgentActionResponse(
+            String executionId, String bcId, String agentUrl, String branchName, String runId) {}
+
+    public record ReportCompletionRequest(
+            @NotBlank String outcome,
+            String summary,
+            String findingsJson,
+            String prUrl,
+            String headSha,
+            Integer prNumber,
+            @NotBlank String idempotencyKey,
+            String operatorId) {}
 
     public record TransitionHistoryItem(
             TaskState fromState, TaskState toState, String reason, Instant createdAt) {}

@@ -6,8 +6,19 @@ async function request(path, options = {}) {
     ...options,
   });
   if (!response.ok) {
-    const text = await response.text();
-    throw new Error(text || response.statusText);
+    let message = response.statusText;
+    try {
+      const body = await response.json();
+      if (body?.error) {
+        message = body.error;
+      }
+    } catch {
+      const text = await response.text();
+      if (text) {
+        message = text;
+      }
+    }
+    throw new Error(message);
   }
   if (response.status === 204) {
     return null;
@@ -22,6 +33,42 @@ export function listTasks(state) {
 
 export function getTask(taskId) {
   return request(`/api/v1/tasks/${taskId}`);
+}
+
+export function getTaskActions(taskId) {
+  return request(`/api/v1/tasks/${taskId}/actions`);
+}
+
+export function runDeveloper(taskId) {
+  return request(`/api/v1/tasks/${taskId}/actions/run-developer`, {
+    method: 'POST',
+    body: JSON.stringify({ operatorId: 'dashboard-operator' }),
+  });
+}
+
+export function runReviewer(taskId) {
+  return request(`/api/v1/tasks/${taskId}/actions/run-reviewer`, {
+    method: 'POST',
+    body: JSON.stringify({ operatorId: 'dashboard-operator' }),
+  });
+}
+
+export function runTester(taskId) {
+  return request(`/api/v1/tasks/${taskId}/actions/run-tester`, {
+    method: 'POST',
+    body: JSON.stringify({ operatorId: 'dashboard-operator' }),
+  });
+}
+
+export function reportCompletion(taskId, executionId, payload) {
+  return request(`/api/v1/tasks/${taskId}/actions/executions/${executionId}/complete`, {
+    method: 'POST',
+    body: JSON.stringify({
+      idempotencyKey: `dashboard-${executionId}-${Date.now()}`,
+      operatorId: 'dashboard-operator',
+      ...payload,
+    }),
+  });
 }
 
 export function humanApprove(taskId, mergedBy) {

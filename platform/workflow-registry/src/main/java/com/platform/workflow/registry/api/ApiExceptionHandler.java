@@ -1,5 +1,6 @@
 package com.platform.workflow.registry.api;
 
+import com.platform.workflow.registry.integration.CursorBridgeClientException;
 import com.platform.workflow.registry.service.DuplicateIdempotencyException;
 import com.platform.workflow.registry.service.InvalidTransitionException;
 import com.platform.workflow.registry.service.ResourceNotFoundException;
@@ -26,6 +27,11 @@ public class ApiExceptionHandler {
     @ExceptionHandler(DuplicateIdempotencyException.class)
     public ResponseEntity<Map<String, String>> duplicate(DuplicateIdempotencyException ex) {
         return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("error", ex.getMessage()));
+    }
+
+    @ExceptionHandler(CursorBridgeClientException.class)
+    public ResponseEntity<Map<String, String>> bridgeFailure(CursorBridgeClientException ex) {
+        return ResponseEntity.status(HttpStatus.BAD_GATEWAY).body(Map.of("error", ex.getMessage()));
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)

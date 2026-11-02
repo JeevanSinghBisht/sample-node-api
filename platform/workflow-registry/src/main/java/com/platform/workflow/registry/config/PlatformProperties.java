@@ -9,6 +9,8 @@ public class PlatformProperties {
     private Github github = new Github();
     private N8n n8n = new N8n();
     private Dashboard dashboard = new Dashboard();
+    private Bridge bridge = new Bridge();
+    private AgentRepo agent = new AgentRepo();
 
     public InternalApi getInternal() {
         return internal;
@@ -40,6 +42,22 @@ public class PlatformProperties {
 
     public void setDashboard(Dashboard dashboard) {
         this.dashboard = dashboard;
+    }
+
+    public Bridge getBridge() {
+        return bridge;
+    }
+
+    public void setBridge(Bridge bridge) {
+        this.bridge = bridge;
+    }
+
+    public AgentRepo getAgent() {
+        return agent;
+    }
+
+    public void setAgent(AgentRepo agent) {
+        this.agent = agent;
     }
 
     public static class InternalApi {
@@ -114,6 +132,39 @@ public class PlatformProperties {
 
         public void setAllowedOrigins(String allowedOrigins) {
             this.allowedOrigins = allowedOrigins;
+        }
+    }
+
+    public static class Bridge {
+        private String baseUrl = "http://localhost:8082";
+
+        public String getBaseUrl() {
+            return baseUrl;
+        }
+
+        public void setBaseUrl(String baseUrl) {
+            this.baseUrl = baseUrl;
+        }
+    }
+
+    public static class AgentRepo {
+        private String repoUrl = "";
+        private String defaultRef = "main";
+
+        public String getRepoUrl() {
+            return repoUrl;
+        }
+
+        public void setRepoUrl(String repoUrl) {
+            this.repoUrl = repoUrl;
+        }
+
+        public String getDefaultRef() {
+            return defaultRef;
+        }
+
+        public void setDefaultRef(String defaultRef) {
+            this.defaultRef = defaultRef;
         }
     }
 }
