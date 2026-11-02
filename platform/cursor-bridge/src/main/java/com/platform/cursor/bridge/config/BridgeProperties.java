@@ -10,6 +10,7 @@ public class BridgeProperties {
     private InternalApi internal = new InternalApi();
     private Webhooks webhooks = new Webhooks();
     private String defaultModelId = "";
+    private boolean autoCreatePr = true;
 
     public CursorApi getCursor() {
         return cursor;
@@ -49,6 +50,14 @@ public class BridgeProperties {
 
     public void setDefaultModelId(String defaultModelId) {
         this.defaultModelId = defaultModelId;
+    }
+
+    public boolean isAutoCreatePr() {
+        return autoCreatePr;
+    }
+
+    public void setAutoCreatePr(boolean autoCreatePr) {
+        this.autoCreatePr = autoCreatePr;
     }
 
     public static class CursorApi {

@@ -42,6 +42,9 @@ public class CursorAgentsClient {
         }
 
         ObjectNode body = buildCreateBody(command, promptText);
+        if (log.isDebugEnabled()) {
+            log.debug("Cursor create agent request: {}", body);
+        }
         JsonNode response = restClient
                 .post()
                 .uri("/v1/agents")
@@ -76,7 +79,6 @@ public class CursorAgentsClient {
         ObjectNode root = objectMapper.createObjectNode();
         ObjectNode prompt = root.putObject("prompt");
         prompt.put("text", promptText);
-        root.put("name", truncateName(command.taskId() + " " + command.role()));
 
         String modelId = resolveModelId(command);
         if (modelId != null && !modelId.isBlank()) {
@@ -84,34 +86,32 @@ public class CursorAgentsClient {
             model.put("id", modelId);
         }
 
-        ArrayNode repos = root.putArray("repos");
-        ObjectNode repo = repos.addObject();
-        repo.put("url", command.repoUrl());
-        if (command.prUrl() != null && !command.prUrl().isBlank()) {
-            repo.put("prUrl", command.prUrl());
-        } else {
-            repo.put("startingRef", command.baseRef() != null ? command.baseRef() : "master");
-        }
-
         if (command.environmentId() != null && !command.environmentId().isBlank()) {
             ObjectNode env = root.putObject("env");
             env.put("type", "cloud");
             env.put("name", command.environmentId());
-            root.remove("repos");
-        }
-
-        root.put("autoCreatePR", command.role() == AgentRole.DEVELOPER);
-        root.put("workOnCurrentBranch", false);
-
-        ObjectNode envVars = root.putObject("envVars");
-        envVars.put("PLATFORM_TASK_ID", command.taskId());
-        envVars.put("PLATFORM_EXECUTION_ID", command.executionId());
-        envVars.put("PLATFORM_ROLE", command.role().name());
-        if (command.branchName() != null) {
-            envVars.put("PLATFORM_BRANCH_HINT", command.branchName());
+        } else {
+            ArrayNode repos = root.putArray("repos");
+            ObjectNode repo = repos.addObject();
+            repo.put("url", normalizeRepoUrl(command.repoUrl()));
+            if (command.prUrl() != null && !command.prUrl().isBlank()) {
+                repo.put("prUrl", command.prUrl());
+            } else {
+                repo.put("startingRef", command.baseRef() != null && !command.baseRef().isBlank() ? command.baseRef() : "main");
+            }
+            if (command.role() == AgentRole.DEVELOPER && properties.isAutoCreatePr()) {
+                root.put("autoCreatePR", true);
+            }
         }
 
         return root;
+    }
+
+    private static String normalizeRepoUrl(String url) {
+        if (url == null) {
+            return "";
+        }
+        return url.trim().replaceAll("/+$", "");
     }
 
     /** When blank, Cursor uses the API key owner's configured default model. */

@@ -12,6 +12,7 @@ spring:
 platform:
   # Leave empty to omit model from API requests (Cursor account default). Override with CURSOR_DEFAULT_MODEL_ID.
   default-model-id: ${CURSOR_DEFAULT_MODEL_ID:}
+  auto-create-pr: ${CURSOR_AUTO_CREATE_PR:true}
   cursor:
     base-url: https://api.cursor.com
     api-key: ${CURSOR_API_KEY:}
