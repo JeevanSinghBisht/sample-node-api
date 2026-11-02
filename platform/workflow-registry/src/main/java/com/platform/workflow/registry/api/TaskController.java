@@ -3,7 +3,6 @@ package com.platform.workflow.registry.api;
 import com.platform.workflow.registry.api.dto.TaskDtos;
 import com.platform.workflow.registry.domain.ActorType;
 import com.platform.workflow.registry.domain.TaskState;
-import com.platform.workflow.registry.domain.WorkflowTask;
 import com.platform.workflow.registry.service.TaskQueryService;
 import com.platform.workflow.registry.service.TaskTransitionService;
 import jakarta.validation.Valid;
@@ -34,20 +33,18 @@ public class TaskController {
     public Page<TaskDtos.TaskSummaryResponse> listTasks(
             @RequestParam(required = false) TaskState state,
             @PageableDefault(size = 20) Pageable pageable) {
-        return queryService.listTasks(state, pageable).map(TaskMapper::toSummary);
+        return queryService.listTaskSummaries(state, pageable);
     }
 
     @GetMapping("/{taskId}")
     public TaskDtos.TaskDetailResponse getTask(@PathVariable String taskId) {
-        WorkflowTask task = queryService.getTask(taskId);
-        return TaskMapper.toDetail(
-                task, queryService.getTransitions(taskId), queryService.getExecutions(taskId));
+        return queryService.getTaskDetail(taskId);
     }
 
     @PostMapping("/{taskId}/human-approve")
     public TaskDtos.TaskSummaryResponse humanApprove(
             @PathVariable String taskId, @Valid @RequestBody TaskDtos.HumanApproveRequest request) {
-        WorkflowTask task = transitionService.transition(
+        transitionService.transition(
                 taskId,
                 TaskState.DONE,
                 "human_merge_acknowledged",
@@ -55,6 +52,6 @@ public class TaskController {
                 ActorType.HUMAN,
                 request.mergedBy() != null ? request.mergedBy() : "operator",
                 null);
-        return TaskMapper.toSummary(task);
+        return queryService.getTaskSummary(taskId);
     }
 }

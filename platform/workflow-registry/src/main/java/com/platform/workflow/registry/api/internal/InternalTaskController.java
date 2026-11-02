@@ -1,6 +1,5 @@
 package com.platform.workflow.registry.api.internal;
 
-import com.platform.workflow.registry.api.TaskMapper;
 import com.platform.workflow.registry.api.dto.TaskDtos;
 import com.platform.workflow.registry.domain.ActorType;
 import com.platform.workflow.registry.domain.WorkflowTask;
@@ -36,9 +35,7 @@ public class InternalTaskController {
 
     @GetMapping("/{taskId}")
     public TaskDtos.TaskDetailResponse getTask(@PathVariable String taskId) {
-        WorkflowTask task = queryService.getTask(taskId);
-        return TaskMapper.toDetail(
-                task, queryService.getTransitions(taskId), queryService.getExecutions(taskId));
+        return queryService.getTaskDetail(taskId);
     }
 
     @PostMapping("/from-issue")
@@ -54,7 +51,7 @@ public class InternalTaskController {
                 request.idempotencyKey(),
                 request.actorType() != null ? request.actorType() : ActorType.N8N,
                 request.actorId()));
-        return TaskMapper.toSummary(task);
+        return queryService.getTaskSummary(task.getId());
     }
 
     @PostMapping("/{taskId}/transition")
