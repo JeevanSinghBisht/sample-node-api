@@ -9,7 +9,7 @@ With **`docker compose`** in `platform/`, n8n receives variables from [`.env`](.
 | `REGISTRY_BASE_URL` | `http://host.docker.internal:8081` |
 | `BRIDGE_BASE_URL` | `http://host.docker.internal:8082` |
 | `PLATFORM_HMAC_SECRET` | same as `PLATFORM_INTERNAL_HMAC_SECRET` |
-| `GITHUB_REPO_URL` | from `.env` |
+| `AGENT_REPO_URL` | GitLab product repo URL (from `.env`) |
 
 If n8n is not in Docker, set the same names under **Settings → Variables** or export them in the shell before starting n8n.
 

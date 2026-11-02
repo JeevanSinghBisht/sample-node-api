@@ -1,5 +1,7 @@
 # Platform startup guide
 
+> **GitLab-only (no GitHub):** use **[FIRST-RUN-GITLAB.md](FIRST-RUN-GITLAB.md)** and **[GITLAB-MANUAL.md](GITLAB-MANUAL.md)**. Ignore GitHub webhook sections below.
+
 This guide walks you from zero to a running **agent dev platform**: Docker (MySQL, Redis, RabbitMQ, n8n), **workflow-registry**, **cursor-bridge**, optional **ops dashboard**, and real **Cursor Cloud Agents**.
 
 All paths assume you are in the repository root unless noted.

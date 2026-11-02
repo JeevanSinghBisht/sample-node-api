@@ -120,7 +120,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const crypto = require('crypto');\nconst norm = $('Normalize envelope').item.json;\nconst executionId = $json.id;\nconst repoUrl = ($env.GITHUB_REPO_URL || '').replace(/\\/$/, '');\nconst baseRef = ($env.REPO_DEFAULT_REF || 'main').trim();\nconst issueUrl = norm.issueUrl || (repoUrl ? `${repoUrl}/-/issues/${norm.issueNumber}` : '');\nconst body = JSON.stringify({\n  taskId: norm.taskId,\n  executionId,\n  role: 'DEVELOPER',\n  repoUrl: $env.GITHUB_REPO_URL,\n  baseRef,\n  branchName: `cursor/task-${norm.taskId}-dev-${norm.attemptDev}-ec4b`,\n  promptContext: {\n    taskId: norm.taskId,\n    executionId,\n    issueNumber: String(norm.issueNumber),\n    issueUrl,\n    issueTitle: norm.issueTitle || 'Automated task',\n    issueBody: norm.issueBody || 'See linked issue for full description.',\n    reviewFeedback: 'none',\n    qaFeedback: 'none'\n  }\n});\nconst ts = Math.floor(Date.now()/1000).toString();\nconst sig = 'hmac-sha256=' + crypto.createHmac('sha256', $env.PLATFORM_HMAC_SECRET).update(ts + '.' + body).digest('hex');\nreturn [{ json: { body, ts, sig } }];"
+        "jsCode": "const crypto = require('crypto');\nconst norm = $('Normalize envelope').item.json;\nconst executionId = $json.id;\nconst agentRepo = ($env.AGENT_REPO_URL || $env.GITLAB_REPO_URL || $env.GITHUB_REPO_URL || '').replace(/\\/$/, '');\nconst baseRef = ($env.REPO_DEFAULT_REF || 'main').trim();\nconst issueUrl = norm.issueUrl || (agentRepo ? `${agentRepo}/-/issues/${norm.issueNumber}` : '');\nconst body = JSON.stringify({\n  taskId: norm.taskId,\n  executionId,\n  role: 'DEVELOPER',\n  repoUrl: agentRepo,\n  baseRef,\n  branchName: `cursor/task-${norm.taskId}-dev-${norm.attemptDev}-ec4b`,\n  promptContext: {\n    taskId: norm.taskId,\n    executionId,\n    issueNumber: String(norm.issueNumber),\n    issueUrl,\n    issueTitle: norm.issueTitle || 'Automated task',\n    issueBody: norm.issueBody || 'See linked issue for full description.',\n    reviewFeedback: 'none',\n    qaFeedback: 'none'\n  }\n});\nconst ts = Math.floor(Date.now()/1000).toString();\nconst sig = 'hmac-sha256=' + crypto.createHmac('sha256', $env.PLATFORM_HMAC_SECRET).update(ts + '.' + body).digest('hex');\nreturn [{ json: { body, ts, sig } }];"
       },
       "id": "a1b2c3d4-1111-4000-8000-000000000012",
       "name": "HMAC spawn DEV agent",
@@ -188,7 +188,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const crypto = require('crypto');\nconst norm = $('Normalize envelope').item.json;\nconst executionId = $json.id;\nconst body = JSON.stringify({\n  taskId: norm.taskId,\n  executionId,\n  role: 'REVIEWER',\n  repoUrl: $env.GITHUB_REPO_URL,\n  prUrl: norm.prUrl,\n  promptContext: { taskId: norm.taskId, executionId, prUrl: norm.prUrl || '' }\n});\nconst ts = Math.floor(Date.now()/1000).toString();\nconst sig = 'hmac-sha256=' + crypto.createHmac('sha256', $env.PLATFORM_HMAC_SECRET).update(ts + '.' + body).digest('hex');\nreturn [{ json: { body, ts, sig } }];"
+        "jsCode": "const crypto = require('crypto');\nconst norm = $('Normalize envelope').item.json;\nconst executionId = $json.id;\nconst body = JSON.stringify({\n  taskId: norm.taskId,\n  executionId,\n  role: 'REVIEWER',\n  repoUrl: ($env.AGENT_REPO_URL || $env.GITLAB_REPO_URL || $env.GITHUB_REPO_URL || ''),\n  prUrl: norm.prUrl,\n  promptContext: { taskId: norm.taskId, executionId, prUrl: norm.prUrl || '' }\n});\nconst ts = Math.floor(Date.now()/1000).toString();\nconst sig = 'hmac-sha256=' + crypto.createHmac('sha256', $env.PLATFORM_HMAC_SECRET).update(ts + '.' + body).digest('hex');\nreturn [{ json: { body, ts, sig } }];"
       },
       "id": "a1b2c3d4-1111-4000-8000-000000000022",
       "name": "HMAC spawn REV agent",
@@ -256,7 +256,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const crypto = require('crypto');\nconst norm = $('Normalize envelope').item.json;\nconst executionId = $json.id;\nconst body = JSON.stringify({\n  taskId: norm.taskId,\n  executionId,\n  role: 'TESTER',\n  repoUrl: $env.GITHUB_REPO_URL,\n  prUrl: norm.prUrl,\n  promptContext: { taskId: norm.taskId, executionId, prUrl: norm.prUrl || '', issueBody: 'Run full QA.' }\n});\nconst ts = Math.floor(Date.now()/1000).toString();\nconst sig = 'hmac-sha256=' + crypto.createHmac('sha256', $env.PLATFORM_HMAC_SECRET).update(ts + '.' + body).digest('hex');\nreturn [{ json: { body, ts, sig } }];"
+        "jsCode": "const crypto = require('crypto');\nconst norm = $('Normalize envelope').item.json;\nconst executionId = $json.id;\nconst body = JSON.stringify({\n  taskId: norm.taskId,\n  executionId,\n  role: 'TESTER',\n  repoUrl: ($env.AGENT_REPO_URL || $env.GITLAB_REPO_URL || $env.GITHUB_REPO_URL || ''),\n  prUrl: norm.prUrl,\n  promptContext: { taskId: norm.taskId, executionId, prUrl: norm.prUrl || '', issueBody: 'Run full QA.' }\n});\nconst ts = Math.floor(Date.now()/1000).toString();\nconst sig = 'hmac-sha256=' + crypto.createHmac('sha256', $env.PLATFORM_HMAC_SECRET).update(ts + '.' + body).digest('hex');\nreturn [{ json: { body, ts, sig } }];"
       },
       "id": "a1b2c3d4-1111-4000-8000-000000000032",
       "name": "HMAC spawn QA agent",

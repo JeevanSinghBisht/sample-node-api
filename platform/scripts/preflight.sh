@@ -32,8 +32,14 @@ else
   warn "CURSOR_API_KEY unset (use CURSOR_MOCK_ENABLED=true for dry run)"
 fi
 
-[[ -n "${GITHUB_REPO_URL:-}" ]] && ok "GITHUB_REPO_URL=$GITHUB_REPO_URL" || fail "set GITHUB_REPO_URL to GitLab product repo"
-[[ -n "${GITLAB_PROJECT_PATH:-}" ]] && ok "GITLAB_PROJECT_PATH=$GITLAB_PROJECT_PATH" || warn "GITLAB_PROJECT_PATH unset (derived from URL in scripts)"
+if [[ -n "${AGENT_REPO_URL:-}${GITLAB_REPO_URL:-}" ]]; then
+  ok "AGENT_REPO_URL=${AGENT_REPO_URL:-$GITLAB_REPO_URL}"
+elif [[ -n "${GITHUB_REPO_URL:-}" ]]; then
+  warn "Using deprecated GITHUB_REPO_URL — prefer AGENT_REPO_URL for GitLab"
+else
+  fail "set AGENT_REPO_URL to your GitLab product project URL"
+fi
+[[ -n "${GITLAB_PROJECT_PATH:-}" ]] && ok "GITLAB_PROJECT_PATH=$GITLAB_PROJECT_PATH" || warn "GITLAB_PROJECT_PATH unset (derived from AGENT_REPO_URL in scripts)"
 
 if command -v mysql >/dev/null 2>&1 && [[ -n "${MYSQL_HOST:-}" ]]; then
   if mysql -h"${MYSQL_HOST}" -P"${MYSQL_PORT:-3306}" -u"${MYSQL_USER}" -p"${MYSQL_PASSWORD}" -e "SELECT 1" >/dev/null 2>&1; then

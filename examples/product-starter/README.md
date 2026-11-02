@@ -11,10 +11,10 @@ git remote add origin https://gitlab.com/YOUR_GROUP/YOUR_PRODUCT.git
 git push -u origin main
 ```
 
-Then point `platform/.env`:
+Then point `platform/.env` (GitLab only — no GitHub):
 
 ```bash
-GITHUB_REPO_URL=https://gitlab.com/YOUR_GROUP/YOUR_PRODUCT
+AGENT_REPO_URL=https://gitlab.com/YOUR_GROUP/YOUR_PRODUCT
 GITLAB_PROJECT_PATH=YOUR_GROUP/YOUR_PRODUCT
 ```
 
