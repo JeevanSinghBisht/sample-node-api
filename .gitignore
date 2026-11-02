@@ -5,5 +5,8 @@ output
 dist
 .history/
 
+# Java / Maven
+**/target/
+
 # mac
 .DS_Store
